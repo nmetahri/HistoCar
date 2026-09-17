@@ -1,0 +1,36 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Vehicule {
+  id                String      @id @default(cuid())
+  marque            String
+  modele            String
+  immatriculation   String
+  annee             Int
+  kilometrageActuel Int
+  motorisation      String
+  capaciteHuile     String
+  intervalleVidange String
+  entretiens        Entretien[]
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+}
+
+model Entretien {
+  id          String   @id @default(cuid())
+  vehiculeId  String
+  vehicule    Vehicule @relation(fields: [vehiculeId], references: [id], onDelete: Cascade)
+  date        DateTime @db.Date
+  kilometrage Int
+  type        String
+  details     String
+  createdAt   DateTime @default(now())
+
+  @@index([vehiculeId])
+}

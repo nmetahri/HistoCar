@@ -1,0 +1,7 @@
+node_modules/
+dist/
+build/
+.env
+*.local
+packages/server/storage/renders/*.html
+!packages/server/storage/renders/.gitkeep
