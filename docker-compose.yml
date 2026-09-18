@@ -1,19 +1,106 @@
+# ============================================================
+# PRODUCTION — Docker Compose (HistoCar)
+# ============================================================
+# Usage : make up-prod
+# Services : db + migrate (one-shot) + server + web + tunnel
+#
+# Tout est same-origin : nginx (web) sert le bundle et proxifie
+# /api/ vers server:3001. Le tunnel cloudflare n'expose que web.
+# ============================================================
+
 services:
   db:
+    container_name: histocar-db
     image: postgres:16-alpine
-    environment:
-      POSTGRES_USER: histocar
-      POSTGRES_PASSWORD: histocar
-      POSTGRES_DB: histocar
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        format: raw
     ports:
       - "5432:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
+    networks:
+      - histocar-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U histocar"]
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s
       timeout: 5s
       retries: 10
 
+  migrate:
+    container_name: histocar-migrate
+    build:
+      context: .
+      dockerfile: packages/server/Dockerfile
+      target: builder
+    command: npx prisma migrate deploy --schema packages/server/prisma/schema.prisma
+    env_file:
+      - path: .env
+        format: raw
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - histocar-network
+    restart: "no"
+
+  server:
+    container_name: histocar-server
+    build:
+      context: .
+      dockerfile: packages/server/Dockerfile
+      target: runtime
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        format: raw
+    expose:
+      - "3001"
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - histocar-network
+
+  web:
+    container_name: histocar-web
+    build:
+      context: .
+      dockerfile: packages/web/Dockerfile
+      target: runtime
+      args:
+        VITE_API_URL: /api
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    depends_on:
+      server:
+        condition: service_healthy
+    networks:
+      - histocar-network
+
+  tunnel:
+    container_name: cloudflared-tunnel-histocar
+    image: cloudflare/cloudflared
+    restart: unless-stopped
+    depends_on:
+      - web
+    command: --config /etc/cloudflared/config.yaml --cred-file /etc/cloudflared/${TUNNEL_UUID}.json tunnel run histocar-tunnel
+    env_file:
+      - path: .env
+        format: raw
+    volumes:
+      - ./cloudflared:/etc/cloudflared:ro
+    networks:
+      - histocar-network
+
 volumes:
   db_data:
+
+networks:
+  histocar-network:
+    name: histocar-network
+    driver: bridge

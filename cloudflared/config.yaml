@@ -1,0 +1,20 @@
+# ============================================================
+# Cloudflare Tunnel — HistoCar (prod)
+# ============================================================
+# Le tunnel et le credentials-file sont passés en ligne de
+# commande par docker-compose.yml (${TUNNEL_UUID} depuis .env).
+#
+# ⚠️  Remplacer histocar.example.com par le vrai hostname, puis :
+#       cloudflared tunnel route dns histocar-tunnel <hostname>
+# ============================================================
+
+tunnel: ${TUNNEL_UUID}
+credentials-file: /etc/cloudflared/${TUNNEL_UUID}.json
+
+ingress:
+  - hostname: histocar.example.com
+    service: http://histocar-web:80
+    originRequest:
+      tlsVerify: false
+
+  - service: http_status:404
