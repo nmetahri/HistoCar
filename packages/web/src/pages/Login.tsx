@@ -1,56 +1,56 @@
-import { useState, type FormEvent } from "react";
+import { type FormEvent, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "@/context/AuthContext";
 
 export function Login() {
-  const { username, connecter } = useAuth();
+  const { username, signIn } = useAuth();
   const navigate = useNavigate();
-  const [usernameSaisi, setUsernameSaisi] = useState("");
+  const [submittedUsername, setSubmittedUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [erreur, setErreur] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   if (username) {
     return <Navigate to="/" replace />;
   }
 
-  async function soumettre(evenement: FormEvent): Promise<void> {
-    evenement.preventDefault();
-    setErreur(null);
+  async function handleSubmit(event: FormEvent): Promise<void> {
+    event.preventDefault();
+    setError(null);
     try {
-      await connecter(usernameSaisi, password);
+      await signIn(submittedUsername, password);
       navigate("/");
     } catch {
-      setErreur("Identifiants incorrects");
+      setError("Identifiants incorrects");
     }
   }
 
   return (
-    <main className="page-centree">
-      <form className="carte formulaire formulaire-connexion" onSubmit={soumettre}>
-        <h1 className="titre-connexion">HistoCar</h1>
-        <div className="champ">
+    <main className="centered-page">
+      <form className="card form login-form" onSubmit={handleSubmit}>
+        <h1 className="login-title">HistoCar</h1>
+        <div className="field">
           <label htmlFor="username">Utilisateur</label>
           <input
             id="username"
-            value={usernameSaisi}
-            onChange={(evenement) => setUsernameSaisi(evenement.target.value)}
+            value={submittedUsername}
+            onChange={(event) => setSubmittedUsername(event.target.value)}
             autoComplete="username"
             required
           />
         </div>
-        <div className="champ">
+        <div className="field">
           <label htmlFor="password">Mot de passe</label>
           <input
             id="password"
             type="password"
             value={password}
-            onChange={(evenement) => setPassword(evenement.target.value)}
+            onChange={(event) => setPassword(event.target.value)}
             autoComplete="current-password"
             required
           />
         </div>
-        {erreur && <p className="erreur">{erreur}</p>}
-        <button type="submit" className="btn btn-primaire">
+        {error && <p className="error">{error}</p>}
+        <button type="submit" className="btn btn-primary">
           Se connecter
         </button>
       </form>

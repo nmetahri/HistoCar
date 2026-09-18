@@ -6,9 +6,17 @@
     "packages/web"
   ],
   "scripts": {
-    "dev": "concurrently -n server,web -c blue,green \"npm run dev -w packages/server\" \"npm run dev -w packages/web\""
+    "dev": "concurrently -n server,web -c blue,green \"npm run dev -w packages/server\" \"npm run dev -w packages/web\"",
+    "lint": "biome check",
+    "lint:fix": "biome check --write",
+    "format": "biome format --write",
+    "test": "npm run test -w packages/server",
+    "typecheck": "npm run typecheck -w packages/server && npm run typecheck -w packages/web",
+    "verify": "npm run lint && npm run typecheck && npm run test",
+    "build": "npm run build -w packages/server && npm run build -w packages/web"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.5.14",
     "concurrently": "^9.1.0"
   }
 }

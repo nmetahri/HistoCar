@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
-import { env } from "../env";
+import { env } from "@/env";
 
 export const COOKIE_NAME = "histocar_token";
 

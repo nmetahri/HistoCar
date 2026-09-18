@@ -2,43 +2,45 @@ import bcrypt from "bcrypt";
 import { Router } from "express";
 import jwt from "jsonwebtoken";
 import { z } from "zod";
-import { env } from "../env";
-import { COOKIE_NAME, requireAuth } from "./auth.middleware";
+import { COOKIE_NAME, requireAuth } from "@/auth/auth.middleware";
+import { env } from "@/env";
+import { asyncRoute, HttpError } from "@/http/errors";
 
 export const authRouter = Router();
 
-const SEPT_JOURS_EN_MS = 7 * 24 * 60 * 60 * 1000;
+const SEVEN_DAYS_IN_MS = 7 * 24 * 60 * 60 * 1000;
 
-const loginSchema = z.object({
+const credentialsSchema = z.object({
   username: z.string().min(1),
   password: z.string().min(1),
 });
 
-authRouter.post("/auth/login", async (req, res) => {
-  const parsed = loginSchema.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ message: "Identifiants invalides" });
-    return;
-  }
+authRouter.post(
+  "/auth/login",
+  asyncRoute(async (req, res) => {
+    const parsed = credentialsSchema.safeParse(req.body);
+    if (!parsed.success) {
+      throw new HttpError(400, "Identifiants invalides");
+    }
 
-  const { username, password } = parsed.data;
-  const identifiantValide = username === env.authUsername;
-  const motDePasseValide = await bcrypt.compare(password, env.authPasswordHash);
+    const { username, password } = parsed.data;
+    const usernameMatches = username === env.authUsername;
+    const passwordMatches = await bcrypt.compare(password, env.authPasswordHash);
 
-  if (!identifiantValide || !motDePasseValide) {
-    res.status(401).json({ message: "Identifiants incorrects" });
-    return;
-  }
+    if (!usernameMatches || !passwordMatches) {
+      throw new HttpError(401, "Identifiants incorrects");
+    }
 
-  const token = jwt.sign({ sub: username }, env.jwtSecret, { expiresIn: "7d" });
-  res.cookie(COOKIE_NAME, token, {
-    httpOnly: true,
-    secure: env.isProduction,
-    sameSite: "lax",
-    maxAge: SEPT_JOURS_EN_MS,
-  });
-  res.json({ username });
-});
+    const token = jwt.sign({ sub: username }, env.jwtSecret, { expiresIn: "7d" });
+    res.cookie(COOKIE_NAME, token, {
+      httpOnly: true,
+      secure: env.isProduction,
+      sameSite: "lax",
+      maxAge: SEVEN_DAYS_IN_MS,
+    });
+    res.json({ username });
+  }),
+);
 
 authRouter.post("/auth/logout", (_req, res) => {
   res.clearCookie(COOKIE_NAME);

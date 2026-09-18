@@ -1,9 +1,9 @@
 import "dotenv/config";
-import { creerApp } from "./app";
-import { env } from "./env";
+import { createApp } from "@/app";
+import { env } from "@/env";
 
-const app = creerApp();
+const app = createApp();
 
 app.listen(env.port, () => {
-  console.log(`Serveur HistoCar démarré sur http://localhost:${env.port}`);
+  console.log(`HistoCar server listening on http://localhost:${env.port}`);
 });

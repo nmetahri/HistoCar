@@ -1,35 +1,36 @@
 -- CreateTable
-CREATE TABLE "Vehicule" (
+CREATE TABLE "Vehicle" (
     "id" TEXT NOT NULL,
-    "marque" TEXT NOT NULL,
-    "modele" TEXT NOT NULL,
-    "immatriculation" TEXT NOT NULL,
-    "annee" INTEGER NOT NULL,
-    "kilometrageActuel" INTEGER NOT NULL,
-    "motorisation" TEXT NOT NULL,
-    "capaciteHuile" TEXT NOT NULL,
-    "intervalleVidange" TEXT NOT NULL,
+    "make" TEXT NOT NULL,
+    "model" TEXT NOT NULL,
+    "licensePlate" TEXT NOT NULL,
+    "year" INTEGER NOT NULL,
+    "currentMileage" INTEGER NOT NULL,
+    "engine" TEXT NOT NULL,
+    "oilCapacity" TEXT NOT NULL,
+    "oilChangeInterval" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "Vehicule_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "Vehicle_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "Entretien" (
+CREATE TABLE "MaintenanceRecord" (
     "id" TEXT NOT NULL,
-    "vehiculeId" TEXT NOT NULL,
+    "vehicleId" TEXT NOT NULL,
     "date" DATE NOT NULL,
-    "kilometrage" INTEGER NOT NULL,
+    "mileage" INTEGER NOT NULL,
     "type" TEXT NOT NULL,
     "details" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT "Entretien_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "MaintenanceRecord_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
-CREATE INDEX "Entretien_vehiculeId_idx" ON "Entretien"("vehiculeId");
+CREATE INDEX "MaintenanceRecord_vehicleId_idx" ON "MaintenanceRecord"("vehicleId");
 
 -- AddForeignKey
-ALTER TABLE "Entretien" ADD CONSTRAINT "Entretien_vehiculeId_fkey" FOREIGN KEY ("vehiculeId") REFERENCES "Vehicule"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "MaintenanceRecord" ADD CONSTRAINT "MaintenanceRecord_vehicleId_fkey" FOREIGN KEY ("vehicleId") REFERENCES "Vehicle"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+

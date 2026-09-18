@@ -62,7 +62,7 @@ h2 {
   gap: 1.25rem;
 }
 
-.page-centree {
+.centered-page {
   min-height: 100dvh;
   display: flex;
   align-items: center;
@@ -70,7 +70,7 @@ h2 {
   padding: 1.5rem;
 }
 
-.entete {
+.header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -78,28 +78,28 @@ h2 {
   gap: 0.6rem;
 }
 
-.entete h1 {
+.header h1 {
   font-size: 1.4rem;
 }
 
-.entete-liens {
+.header-links {
   display: flex;
   align-items: center;
   gap: 0.75rem;
 }
 
-.lien-retour {
+.back-link {
   color: var(--texte-discret);
   text-decoration: none;
   font-size: 0.9rem;
   font-weight: 500;
 }
 
-.lien-retour:hover {
+.back-link:hover {
   color: var(--texte);
 }
 
-.carte {
+.card {
   background: var(--white);
   border: 1px solid var(--bordure);
   border-radius: var(--rayon-lg);
@@ -107,40 +107,42 @@ h2 {
   box-shadow: var(--ombre-sm);
 }
 
-.carte h2 {
+.card h2 {
   font-size: 1.05rem;
   margin-bottom: 1rem;
 }
 
-.carte-lien {
+.card-link {
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
   text-decoration: none;
   color: inherit;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
-.carte-lien:hover {
+.card-link:hover {
   transform: translateY(-2px);
   box-shadow: var(--ombre);
 }
 
-.carte-lien:active {
+.card-link:active {
   transform: translateY(0) scale(0.99);
 }
 
-.carte-lien strong {
+.card-link strong {
   font-size: 1.05rem;
   font-weight: 600;
 }
 
-.carte-lien span {
+.card-link span {
   color: var(--texte-discret);
   font-size: 0.88rem;
 }
 
-.liste-vehicules {
+.vehicle-list {
   list-style: none;
   padding: 0;
   margin: 0;
@@ -149,17 +151,17 @@ h2 {
   gap: 0.85rem;
 }
 
-.etat-vide {
+.empty-state {
   text-align: center;
   padding: 2.5rem 1rem;
   color: var(--texte-discret);
 }
 
-.etat-vide p {
+.empty-state p {
   margin: 0 0 1rem;
 }
 
-.formulaire {
+.form {
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -167,7 +169,7 @@ h2 {
   max-width: 360px;
 }
 
-.formulaire-ligne {
+.inline-form {
   max-width: none;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -175,23 +177,23 @@ h2 {
   gap: 0.9rem 1rem;
 }
 
-.champ {
+.field {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
 }
 
-.formulaire label,
-.champ label {
+.form label,
+.field label {
   font-size: 0.8rem;
   font-weight: 600;
   color: var(--texte-discret);
 }
 
-.formulaire input,
-.formulaire textarea,
-.champ input,
-.champ textarea {
+.form input,
+.form textarea,
+.field input,
+.field textarea {
   padding: 0.6rem 0.7rem;
   border: 1px solid var(--bordure);
   border-radius: var(--rayon-sm);
@@ -199,13 +201,15 @@ h2 {
   font-family: inherit;
   color: var(--texte);
   background: var(--white);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
-.formulaire input:focus,
-.formulaire textarea:focus,
-.champ input:focus,
-.champ textarea:focus,
+.form input:focus,
+.form textarea:focus,
+.field input:focus,
+.field textarea:focus,
 td input:focus,
 td textarea:focus {
   outline: none;
@@ -213,17 +217,17 @@ td textarea:focus {
   box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
-.formulaire-connexion {
+.login-form {
   max-width: 340px;
   width: 100%;
 }
 
-.titre-connexion {
+.login-title {
   font-size: 1.5rem;
   margin-bottom: 0.25rem;
 }
 
-.actions-formulaire {
+.form-actions {
   display: flex;
   gap: 0.5rem;
 }
@@ -240,47 +244,50 @@ td textarea:focus {
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.1s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    transform 0.1s ease,
+    background-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .btn:active {
   transform: scale(0.97);
 }
 
-.btn-primaire {
+.btn-primary {
   background: var(--accent);
   color: var(--white);
 }
 
-.btn-primaire:hover {
+.btn-primary:hover {
   background: var(--accent-hover);
 }
 
-.btn-secondaire {
+.btn-secondary {
   background: var(--zinc-100);
   color: var(--texte);
 }
 
-.btn-secondaire:hover {
+.btn-secondary:hover {
   background: var(--zinc-200);
 }
 
-.btn-fantome {
+.btn-ghost {
   background: transparent;
   color: var(--texte-discret);
 }
 
-.btn-fantome:hover {
+.btn-ghost:hover {
   background: var(--zinc-100);
   color: var(--texte);
 }
 
-.erreur {
+.error {
   color: var(--danger);
   font-size: 0.85rem;
 }
 
-.tableau-scroll {
+.table-scroll {
   overflow-x: auto;
   margin: 0 -0.25rem;
 }
@@ -317,13 +324,13 @@ tbody tr:hover {
   background: var(--zinc-50);
 }
 
-.actions-ligne {
+.row-actions {
   display: flex;
   gap: 0.3rem;
   white-space: nowrap;
 }
 
-.btn-icone {
+.btn-icon {
   width: 2.1rem;
   height: 2.1rem;
   padding: 0;
@@ -336,26 +343,28 @@ tbody tr:hover {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.15s ease, transform 0.1s ease;
+  transition:
+    background-color 0.15s ease,
+    transform 0.1s ease;
 }
 
-.btn-icone:active {
+.btn-icon:active {
   transform: scale(0.92);
 }
 
-.btn-icone-neutre:hover {
+.btn-icon-neutral:hover {
   background: var(--zinc-100);
 }
 
-.btn-icone-succes:hover {
+.btn-icon-success:hover {
   background: var(--success-soft);
 }
 
-.btn-icone-danger {
+.btn-icon-danger {
   background: var(--danger);
 }
 
-.btn-icone-danger:hover {
+.btn-icon-danger:hover {
   background: var(--danger-hover);
 }
 
@@ -369,33 +378,33 @@ td textarea {
   font-family: inherit;
 }
 
-.apercu-rendu {
+.report-preview {
   width: 100%;
   height: 70vh;
   border: 1px solid var(--bordure);
   border-radius: var(--rayon-sm);
 }
 
-.page-introuvable {
+.not-found {
   text-align: center;
   max-width: 320px;
 }
 
-.page-introuvable h1 {
+.not-found h1 {
   font-size: 3.5rem;
   font-weight: 700;
   color: var(--zinc-300);
   margin-bottom: 0.25rem;
 }
 
-.chargement {
+.loading {
   color: var(--texte-discret);
   padding: 2rem;
   text-align: center;
 }
 
 @media (max-width: 600px) {
-  .tableau-scroll {
+  .table-scroll {
     overflow-x: visible;
     margin: 0;
   }
@@ -447,7 +456,7 @@ td textarea {
     flex: 0 0 5rem;
   }
 
-  td.actions-ligne {
+  td.row-actions {
     justify-content: flex-start;
   }
 }

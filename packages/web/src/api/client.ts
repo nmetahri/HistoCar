@@ -1,74 +1,84 @@
 const API_URL = import.meta.env["VITE_API_URL"] as string;
 
-export interface Vehicule {
+export interface Vehicle {
   id: string;
-  marque: string;
-  modele: string;
-  immatriculation: string;
-  annee: number;
-  kilometrageActuel: number;
-  motorisation: string;
-  capaciteHuile: string;
-  intervalleVidange: string;
+  make: string;
+  model: string;
+  licensePlate: string;
+  year: number;
+  currentMileage: number;
+  engine: string;
+  oilCapacity: string;
+  oilChangeInterval: string;
 }
 
-export interface Entretien {
+export interface MaintenanceRecord {
   id: string;
-  vehiculeId: string;
+  vehicleId: string;
   date: string;
-  kilometrage: number;
+  mileage: number;
   type: string;
   details: string;
 }
 
-export type VehiculeAvecEntretiens = Vehicule & { entretiens: Entretien[] };
+export type VehicleWithMaintenance = Vehicle & { maintenanceRecords: MaintenanceRecord[] };
 
-export type VehiculeFormValues = Omit<Vehicule, "id">;
-export type EntretienFormValues = Omit<Entretien, "id" | "vehiculeId">;
+export type VehicleFormValues = Omit<Vehicle, "id">;
+export type MaintenanceRecordFormValues = Omit<MaintenanceRecord, "id" | "vehicleId">;
 
 class ApiError extends Error {}
 
-async function requete<T>(chemin: string, options: RequestInit = {}): Promise<T> {
-  const reponse = await fetch(`${API_URL}${chemin}`, {
+async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const response = await fetch(`${API_URL}${path}`, {
     ...options,
     credentials: "include",
     headers: { "Content-Type": "application/json", ...options.headers },
   });
 
-  if (!reponse.ok) {
-    const corps = (await reponse.json().catch(() => ({}))) as { message?: string };
-    throw new ApiError(corps.message ?? `Erreur ${reponse.status}`);
+  if (!response.ok) {
+    const body = (await response.json().catch(() => ({}))) as { message?: string };
+    throw new ApiError(body.message ?? `Erreur ${response.status}`);
   }
 
-  if (reponse.status === 204) {
+  if (response.status === 204) {
     return undefined as T;
   }
-  return (await reponse.json()) as T;
+  return (await response.json()) as T;
 }
 
 export const api = {
   login: (username: string, password: string) =>
-    requete<{ username: string }>("/auth/login", { method: "POST", body: JSON.stringify({ username, password }) }),
-  logout: () => requete<void>("/auth/logout", { method: "POST" }),
-  me: () => requete<{ username: string }>("/auth/me"),
-
-  listerVehicules: () => requete<Vehicule[]>("/vehicules"),
-  obtenirVehicule: (id: string) => requete<VehiculeAvecEntretiens>(`/vehicules/${id}`),
-  creerVehicule: (donnees: VehiculeFormValues) =>
-    requete<Vehicule>("/vehicules", { method: "POST", body: JSON.stringify(donnees) }),
-  modifierVehicule: (id: string, donnees: Partial<VehiculeFormValues>) =>
-    requete<Vehicule>(`/vehicules/${id}`, { method: "PUT", body: JSON.stringify(donnees) }),
-  supprimerVehicule: (id: string) => requete<void>(`/vehicules/${id}`, { method: "DELETE" }),
-
-  creerEntretien: (vehiculeId: string, donnees: EntretienFormValues) =>
-    requete<Entretien>(`/vehicules/${vehiculeId}/entretiens`, { method: "POST", body: JSON.stringify(donnees) }),
-  modifierEntretien: (vehiculeId: string, id: string, donnees: Partial<EntretienFormValues>) =>
-    requete<Entretien>(`/vehicules/${vehiculeId}/entretiens/${id}`, {
-      method: "PUT",
-      body: JSON.stringify(donnees),
+    request<{ username: string }>("/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ username, password }),
     }),
-  supprimerEntretien: (vehiculeId: string, id: string) =>
-    requete<void>(`/vehicules/${vehiculeId}/entretiens/${id}`, { method: "DELETE" }),
+  logout: () => request<void>("/auth/logout", { method: "POST" }),
+  me: () => request<{ username: string }>("/auth/me"),
 
-  urlRendu: (vehiculeId: string) => `${API_URL}/vehicules/${vehiculeId}/rendu`,
+  listVehicles: () => request<Vehicle[]>("/vehicles"),
+  getVehicle: (id: string) => request<VehicleWithMaintenance>(`/vehicles/${id}`),
+  createVehicle: (values: VehicleFormValues) =>
+    request<Vehicle>("/vehicles", { method: "POST", body: JSON.stringify(values) }),
+  updateVehicle: (id: string, values: Partial<VehicleFormValues>) =>
+    request<Vehicle>(`/vehicles/${id}`, { method: "PUT", body: JSON.stringify(values) }),
+  deleteVehicle: (id: string) => request<void>(`/vehicles/${id}`, { method: "DELETE" }),
+
+  createMaintenanceRecord: (vehicleId: string, values: MaintenanceRecordFormValues) =>
+    request<MaintenanceRecord>(`/vehicles/${vehicleId}/maintenance`, {
+      method: "POST",
+      body: JSON.stringify(values),
+    }),
+  updateMaintenanceRecord: (
+    vehicleId: string,
+    id: string,
+    values: Partial<MaintenanceRecordFormValues>,
+  ) =>
+    request<MaintenanceRecord>(`/vehicles/${vehicleId}/maintenance/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(values),
+    }),
+  deleteMaintenanceRecord: (vehicleId: string, id: string) =>
+    request<void>(`/vehicles/${vehicleId}/maintenance/${id}`, { method: "DELETE" }),
+
+  reportUrl: (vehicleId: string) => `${API_URL}/vehicles/${vehicleId}/report`,
 };

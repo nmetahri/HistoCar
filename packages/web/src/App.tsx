@@ -1,10 +1,10 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import { ProtectedRoute } from "./components/ProtectedRoute";
-import { AuthProvider } from "./context/AuthContext";
-import { Login } from "./pages/Login";
-import { NotFound } from "./pages/NotFound";
-import { VehiculeDetail } from "./pages/VehiculeDetail";
-import { VehiculeList } from "./pages/VehiculeList";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { AuthProvider } from "@/context/AuthContext";
+import { Login } from "@/pages/Login";
+import { NotFound } from "@/pages/NotFound";
+import { VehicleDetail } from "@/pages/VehicleDetail";
+import { VehicleList } from "@/pages/VehicleList";
 
 export function App() {
   return (
@@ -16,15 +16,15 @@ export function App() {
             path="/"
             element={
               <ProtectedRoute>
-                <VehiculeList />
+                <VehicleList />
               </ProtectedRoute>
             }
           />
           <Route
-            path="/vehicules/:id"
+            path="/vehicles/:id"
             element={
               <ProtectedRoute>
-                <VehiculeDetail />
+                <VehicleDetail />
               </ProtectedRoute>
             }
           />
