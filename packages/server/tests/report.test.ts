@@ -1,87 +1,94 @@
 import { maintenanceRecordFixture, vehicleFixture } from "@tests/fixtures";
 import { describe, expect, it } from "vitest";
-import { buildMaintenanceReport, escapeHtml, formatDate, formatMileage } from "@/report/report";
+import { buildMaintenancePdf } from "@/report/pdf/builder";
+import { distributeColumnWidths } from "@/report/pdf/table";
+import { formatDate, formatMileage, sanitizeWinAnsi, toReportModel } from "@/report/report.data";
+import { buildReportFileName } from "@/report/report.routes";
 
 describe("formatDate", () => {
-  it("formats as dd/mm/yyyy", () => {
-    expect(formatDate(new Date("2026-03-05T00:00:00Z"))).toBe("05/03/2026");
-  });
-
-  it("reads UTC parts so the day never shifts with the local timezone", () => {
-    expect(formatDate(new Date("2026-01-01T00:00:00Z"))).toBe("01/01/2026");
-    expect(formatDate(new Date("2026-12-31T23:59:00Z"))).toBe("31/12/2026");
+  it("renders day/month/year in UTC", () => {
+    expect(formatDate(new Date("2026-03-05T23:30:00Z"))).toBe("05/03/2026");
   });
 });
 
 describe("formatMileage", () => {
-  it("groups thousands with a space", () => {
+  it("groups thousands and appends the unit", () => {
     expect(formatMileage(123456)).toBe("123 456 km");
-    expect(formatMileage(1234567)).toBe("1 234 567 km");
-  });
-
-  it("leaves small numbers untouched", () => {
     expect(formatMileage(0)).toBe("0 km");
-    expect(formatMileage(999)).toBe("999 km");
-  });
-
-  it("truncates decimals", () => {
-    expect(formatMileage(1500.9)).toBe("1 500 km");
   });
 });
 
-describe("escapeHtml", () => {
-  it("escapes the five dangerous characters", () => {
-    expect(escapeHtml(`<&>"'`)).toBe("&lt;&amp;&gt;&quot;&#39;");
+describe("sanitizeWinAnsi", () => {
+  it("keeps the characters French text needs", () => {
+    expect(sanitizeWinAnsi("Révision cœur — 120 € « ok »")).toBe("Révision cœur — 120 € « ok »");
   });
 
-  it("accepts numbers", () => {
-    expect(escapeHtml(2019)).toBe("2019");
+  it("replaces what Helvetica cannot encode", () => {
+    expect(sanitizeWinAnsi("courroie 🚗 ok")).toBe("courroie ? ok");
   });
 });
 
-describe("buildMaintenanceReport", () => {
-  it("renders the vehicle details", () => {
-    const html = buildMaintenanceReport(vehicleFixture(), []);
-    expect(html).toContain("Peugeot");
-    expect(html).toContain("AB-123-CD");
-    expect(html).toContain("123 456 km");
-    expect(html).toContain("1.2 PureTech");
-  });
-
-  it("sorts records from newest to oldest", () => {
-    const html = buildMaintenanceReport(vehicleFixture(), [
-      maintenanceRecordFixture({ id: "a", date: new Date("2024-01-10T00:00:00Z"), type: "Oldest" }),
-      maintenanceRecordFixture({ id: "b", date: new Date("2026-06-01T00:00:00Z"), type: "Newest" }),
-      maintenanceRecordFixture({ id: "c", date: new Date("2025-03-03T00:00:00Z"), type: "Middle" }),
-    ]);
-
-    expect(html.indexOf("Newest")).toBeLessThan(html.indexOf("Middle"));
-    expect(html.indexOf("Middle")).toBeLessThan(html.indexOf("Oldest"));
-  });
-
-  it("does not mutate the records it receives", () => {
+describe("toReportModel", () => {
+  it("sorts records from newest to oldest without mutating the input", () => {
     const records = [
-      maintenanceRecordFixture({ id: "a", date: new Date("2024-01-10T00:00:00Z") }),
-      maintenanceRecordFixture({ id: "b", date: new Date("2026-06-01T00:00:00Z") }),
+      maintenanceRecordFixture({ id: "old", date: new Date("2024-01-01T00:00:00Z") }),
+      maintenanceRecordFixture({ id: "recent", date: new Date("2026-01-01T00:00:00Z") }),
     ];
-    buildMaintenanceReport(vehicleFixture(), records);
-    expect(records.map((record) => record.id)).toEqual(["a", "b"]);
+
+    const model = toReportModel(vehicleFixture(), records);
+
+    expect(model.rows.map((row) => row[0])).toEqual(["01/01/2026", "01/01/2024"]);
+    expect(records[0]?.id).toBe("old");
   });
 
-  it("escapes user-supplied content", () => {
-    const html = buildMaintenanceReport(vehicleFixture({ model: 'Clio "RS" <3' }), [
-      maintenanceRecordFixture({ details: "<script>alert(1)</script>" }),
-    ]);
+  it("describes the vehicle and handles an empty history", () => {
+    const model = toReportModel(vehicleFixture(), []);
 
-    expect(html).not.toContain("<script>alert(1)</script>");
-    expect(html).toContain("&lt;script&gt;alert(1)&lt;/script&gt;");
-    expect(html).toContain("Clio &quot;RS&quot; &lt;3");
+    expect(model.rows).toEqual([]);
+    expect(model.title).toContain("Peugeot 208");
+    expect(model.fields).toContainEqual({ label: "Immatriculation", value: "AB-123-CD" });
+    expect(model.fields).toContainEqual({ label: "Kilométrage actuel", value: "123 456 km" });
+  });
+});
+
+describe("distributeColumnWidths", () => {
+  it("spreads the full width across the columns", () => {
+    const widths = distributeColumnWidths(500, [0.14, 0.16, 0.2, 0.5]);
+
+    expect(widths).toHaveLength(4);
+    expect(widths.reduce((sum, width) => sum + width, 0)).toBe(500);
+  });
+});
+
+describe("buildReportFileName", () => {
+  it("reduces the licence plate to a safe ASCII slug", () => {
+    expect(buildReportFileName("AB-123-CD")).toBe("historique-entretien-ab-123-cd.pdf");
+    expect(buildReportFileName('x"; rm -rf /')).toBe("historique-entretien-x-rm-rf.pdf");
+    expect(buildReportFileName("🚗")).toBe("historique-entretien-vehicule.pdf");
+  });
+});
+
+describe("buildMaintenancePdf", () => {
+  it("produces a PDF document", async () => {
+    const pdf = await buildMaintenancePdf(
+      toReportModel(vehicleFixture(), [maintenanceRecordFixture()]),
+    );
+
+    expect(pdf.subarray(0, 4).toString()).toBe("%PDF");
+    expect(pdf.byteLength).toBeGreaterThan(500);
   });
 
-  it("produces a complete document even with no records", () => {
-    const html = buildMaintenanceReport(vehicleFixture(), []);
-    expect(html.startsWith("<!DOCTYPE html>")).toBe(true);
-    expect(html).toContain("</html>");
-    expect(html).toContain("<tbody>");
+  it("paginates a long history", async () => {
+    const records = Array.from({ length: 120 }, (_, index) =>
+      maintenanceRecordFixture({
+        id: `rec_${index}`,
+        details: `Intervention ${index} avec un descriptif suffisamment long pour occuper la colonne`,
+      }),
+    );
+
+    const pdf = await buildMaintenancePdf(toReportModel(vehicleFixture(), records));
+
+    const pageCount = Number(/\/Count (\d+)/.exec(pdf.toString("latin1"))?.[1]);
+    expect(pageCount).toBeGreaterThan(1);
   });
 });

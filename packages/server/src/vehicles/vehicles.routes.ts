@@ -1,14 +1,19 @@
 import { Router } from "express";
-import { asyncRoute, HttpError } from "@/http/errors";
+import { getAuthUser } from "@/auth/auth.user";
+import { asyncRoute } from "@/http/errors";
 import { prisma } from "@/prisma";
+import { assertVehicleOwned, findOwnedVehicle } from "@/vehicles/vehicles.access";
 import { vehicleSchema, vehicleUpdateSchema } from "@/vehicles/vehicles.schema";
 
 export const vehiclesRouter = Router();
 
 vehiclesRouter.get(
   "/vehicles",
-  asyncRoute(async (_req, res) => {
-    const vehicles = await prisma.vehicle.findMany({ orderBy: { make: "asc" } });
+  asyncRoute(async (req, res) => {
+    const vehicles = await prisma.vehicle.findMany({
+      where: { userId: getAuthUser(req).id },
+      orderBy: { make: "asc" },
+    });
     res.json(vehicles);
   }),
 );
@@ -16,13 +21,7 @@ vehiclesRouter.get(
 vehiclesRouter.get(
   "/vehicles/:id",
   asyncRoute(async (req, res) => {
-    const vehicle = await prisma.vehicle.findUnique({
-      where: { id: req.params["id"] as string },
-      include: { maintenanceRecords: { orderBy: { date: "desc" } } },
-    });
-    if (!vehicle) {
-      throw new HttpError(404, "Véhicule introuvable");
-    }
+    const vehicle = await findOwnedVehicle(req.params["id"] as string, getAuthUser(req).id);
     res.json(vehicle);
   }),
 );
@@ -31,7 +30,9 @@ vehiclesRouter.post(
   "/vehicles",
   asyncRoute(async (req, res) => {
     const data = vehicleSchema.parse(req.body);
-    const vehicle = await prisma.vehicle.create({ data });
+    const vehicle = await prisma.vehicle.create({
+      data: { ...data, userId: getAuthUser(req).id },
+    });
     res.status(201).json(vehicle);
   }),
 );
@@ -39,11 +40,11 @@ vehiclesRouter.post(
 vehiclesRouter.put(
   "/vehicles/:id",
   asyncRoute(async (req, res) => {
+    const id = req.params["id"] as string;
     const data = vehicleUpdateSchema.parse(req.body);
-    const vehicle = await prisma.vehicle.update({
-      where: { id: req.params["id"] as string },
-      data,
-    });
+
+    await assertVehicleOwned(id, getAuthUser(req).id);
+    const vehicle = await prisma.vehicle.update({ where: { id }, data });
     res.json(vehicle);
   }),
 );
@@ -51,7 +52,10 @@ vehiclesRouter.put(
 vehiclesRouter.delete(
   "/vehicles/:id",
   asyncRoute(async (req, res) => {
-    await prisma.vehicle.delete({ where: { id: req.params["id"] as string } });
+    const id = req.params["id"] as string;
+
+    await assertVehicleOwned(id, getAuthUser(req).id);
+    await prisma.vehicle.delete({ where: { id } });
     res.status(204).send();
   }),
 );

@@ -1,5 +1,5 @@
 import { type FormEvent, useState } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 
 export function Login() {
@@ -53,6 +53,9 @@ export function Login() {
         <button type="submit" className="btn btn-primary">
           Se connecter
         </button>
+        <p className="form-footer">
+          Pas encore de compte ? <Link to="/register">Créer un compte</Link>
+        </p>
       </form>
     </main>
   );

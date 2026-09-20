@@ -26,7 +26,24 @@ export type VehicleWithMaintenance = Vehicle & { maintenanceRecords: Maintenance
 export type VehicleFormValues = Omit<Vehicle, "id">;
 export type MaintenanceRecordFormValues = Omit<MaintenanceRecord, "id" | "vehicleId">;
 
-class ApiError extends Error {}
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message);
+  }
+}
+
+const UNAUTHORIZED = 401;
+
+let onUnauthorized: (() => void) | null = null;
+
+// Permet à AuthProvider de vider la session locale quand le cookie expire en
+// cours de navigation, plutôt que de laisser l'écran vide sur une erreur.
+export function setUnauthorizedHandler(handler: (() => void) | null): void {
+  onUnauthorized = handler;
+}
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const response = await fetch(`${API_URL}${path}`, {
@@ -37,7 +54,10 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
   if (!response.ok) {
     const body = (await response.json().catch(() => ({}))) as { message?: string };
-    throw new ApiError(body.message ?? `Erreur ${response.status}`);
+    if (response.status === UNAUTHORIZED && !path.startsWith("/auth/")) {
+      onUnauthorized?.();
+    }
+    throw new ApiError(body.message ?? `Erreur ${response.status}`, response.status);
   }
 
   if (response.status === 204) {
@@ -51,6 +71,11 @@ export const api = {
     request<{ username: string }>("/auth/login", {
       method: "POST",
       body: JSON.stringify({ username, password }),
+    }),
+  register: (username: string, password: string, inviteCode: string) =>
+    request<{ username: string }>("/auth/register", {
+      method: "POST",
+      body: JSON.stringify({ username, password, inviteCode }),
     }),
   logout: () => request<void>("/auth/logout", { method: "POST" }),
   me: () => request<{ username: string }>("/auth/me"),
@@ -80,5 +105,5 @@ export const api = {
   deleteMaintenanceRecord: (vehicleId: string, id: string) =>
     request<void>(`/vehicles/${vehicleId}/maintenance/${id}`, { method: "DELETE" }),
 
-  reportUrl: (vehicleId: string) => `${API_URL}/vehicles/${vehicleId}/report`,
+  reportPdfUrl: (vehicleId: string) => `${API_URL}/vehicles/${vehicleId}/report.pdf`,
 };

@@ -20,6 +20,14 @@ export function asyncRoute(
   };
 }
 
+export function asyncMiddleware(
+  handler: (req: Request, res: Response, next: NextFunction) => Promise<unknown>,
+): RequestHandler {
+  return (req, res, next) => {
+    handler(req, res, next).catch(next);
+  };
+}
+
 export function errorHandler(
   error: unknown,
   _req: Request,

@@ -7,8 +7,18 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id           String    @id @default(cuid())
+  username     String    @unique
+  passwordHash String
+  vehicles     Vehicle[]
+  createdAt    DateTime  @default(now())
+}
+
 model Vehicle {
   id                 String              @id @default(cuid())
+  userId             String
+  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   make               String
   model              String
   licensePlate       String
@@ -20,6 +30,8 @@ model Vehicle {
   maintenanceRecords MaintenanceRecord[]
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
+
+  @@index([userId])
 }
 
 model MaintenanceRecord {

@@ -14,14 +14,12 @@ export function VehicleDetail() {
   const vehicleId = id as string;
   const [vehicle, setVehicle] = useState<VehicleWithMaintenance | null>(null);
   const [values, setValues] = useState<MaintenanceRecordFormValues>(INITIAL_VALUES);
-  const [reportVersion, setReportVersion] = useState(0);
   const [editedRecordId, setEditedRecordId] = useState<string | null>(null);
   const [editedValues, setEditedValues] = useState<MaintenanceRecordFormValues>(INITIAL_VALUES);
 
   const reload = useCallback(async () => {
     const data = await api.getVehicle(vehicleId);
     setVehicle(data);
-    setReportVersion((version) => version + 1);
   }, [vehicleId]);
 
   useEffect(() => {
@@ -235,19 +233,14 @@ export function VehicleDetail() {
 
       <section className="card">
         <div className="header">
-          <h2>Rendu (aperçu, impression = PDF)</h2>
-          <a href={api.reportUrl(vehicleId)} target="_blank" rel="noreferrer">
-            <button type="button" className="btn btn-secondary">
-              Ouvrir le document
-            </button>
+          <h2>Document d'entretien</h2>
+          <a className="btn btn-secondary" href={api.reportPdfUrl(vehicleId)} download>
+            Télécharger le PDF
           </a>
         </div>
-        <iframe
-          key={reportVersion}
-          title="Rendu historique"
-          className="report-preview"
-          src={api.reportUrl(vehicleId)}
-        />
+        <p className="muted">
+          Historique complet du véhicule au format A4, prêt à imprimer ou à transmettre.
+        </p>
       </section>
     </main>
   );

@@ -3,7 +3,7 @@ import cors from "cors";
 import express, { type Express } from "express";
 import helmet from "helmet";
 import { requireAuth } from "@/auth/auth.middleware";
-import { authLimiter } from "@/auth/auth.rate-limit";
+import { createAuthLimiters } from "@/auth/auth.rate-limit";
 import { authRouter } from "@/auth/auth.routes";
 import { env } from "@/env";
 import { healthRouter } from "@/health/health.routes";
@@ -14,6 +14,7 @@ import { vehiclesRouter } from "@/vehicles/vehicles.routes";
 
 export function createApp(): Express {
   const app = express();
+  const limiters = createAuthLimiters();
 
   // Derrière nginx + cloudflared : nécessaire pour que req.ip reflète le
   // vrai client (X-Forwarded-For) plutôt que l'IP du proxy interne.
@@ -25,7 +26,8 @@ export function createApp(): Express {
   app.use(cookieParser());
 
   app.use("/api", healthRouter);
-  app.use("/api/auth/login", authLimiter);
+  app.use("/api/auth/login", limiters.login);
+  app.use("/api/auth/register", limiters.register);
   app.use("/api", authRouter);
   app.use("/api", requireAuth, vehiclesRouter);
   app.use("/api", requireAuth, maintenanceRouter);

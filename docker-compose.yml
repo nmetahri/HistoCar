@@ -42,7 +42,10 @@ services:
       context: .
       dockerfile: packages/server/Dockerfile
       target: builder
-    command: npx prisma migrate deploy --schema packages/server/prisma/schema.prisma
+    # Le bootstrap rattache les véhicules antérieurs au compte AUTH_USERNAME.
+    command: >
+      sh -c "npx prisma migrate deploy --schema packages/server/prisma/schema.prisma
+      && node packages/server/dist/scripts/bootstrap-owner.js"
     env_file:
       - path: .env
         format: raw

@@ -1,10 +1,23 @@
-import type { MaintenanceRecord, Vehicle } from "@prisma/client";
+import type { MaintenanceRecord, User, Vehicle } from "@prisma/client";
 
 export const TEST_PASSWORD = "test-password";
+export const TEST_USER_ID = "usr_1";
+
+export function userFixture(overrides: Partial<User> = {}): User {
+  return {
+    id: TEST_USER_ID,
+    username: "tester",
+    // bcrypt de TEST_PASSWORD
+    passwordHash: "$2b$10$dZfws/kXFs9dtg58Q6PZreOXJkjRHN42UqyjmDJM.S5y6q/Cji0pq",
+    createdAt: new Date("2026-01-01T00:00:00Z"),
+    ...overrides,
+  };
+}
 
 export function vehicleFixture(overrides: Partial<Vehicle> = {}): Vehicle {
   return {
     id: "veh_1",
+    userId: TEST_USER_ID,
     make: "Peugeot",
     model: "208",
     licensePlate: "AB-123-CD",

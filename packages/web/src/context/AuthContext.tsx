@@ -1,10 +1,11 @@
 import { createContext, type ReactNode, useContext, useEffect, useState } from "react";
-import { api } from "@/api/client";
+import { api, setUnauthorizedHandler } from "@/api/client";
 
 interface AuthState {
   username: string | null;
   loading: boolean;
   signIn: (username: string, password: string) => Promise<void>;
+  signUp: (username: string, password: string, inviteCode: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -13,6 +14,11 @@ const AuthContext = createContext<AuthState | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [username, setUsername] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setUnauthorizedHandler(() => setUsername(null));
+    return () => setUnauthorizedHandler(null);
+  }, []);
 
   useEffect(() => {
     api
@@ -27,13 +33,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUsername(me.username);
   }
 
+  async function signUp(
+    submittedUsername: string,
+    password: string,
+    inviteCode: string,
+  ): Promise<void> {
+    const me = await api.register(submittedUsername, password, inviteCode);
+    setUsername(me.username);
+  }
+
   async function signOut(): Promise<void> {
     await api.logout();
     setUsername(null);
   }
 
   return (
-    <AuthContext.Provider value={{ username, loading, signIn, signOut }}>
+    <AuthContext.Provider value={{ username, loading, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );
