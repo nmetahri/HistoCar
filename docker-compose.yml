@@ -8,6 +8,12 @@
 # /api/ vers server:3001. Le tunnel cloudflare n'expose que web.
 # ============================================================
 
+include:
+  - path: cloudflared-tunnel/tunnel.compose.yml
+    # Résout les chemins relatifs (volumes, env_file) par rapport à ce
+    # projet, pas au sous-module.
+    project_directory: .
+
 services:
   db:
     container_name: histocar-db
@@ -16,12 +22,14 @@ services:
     env_file:
       - path: .env
         format: raw
-    ports:
-      - "5432:5432"
+    # Pas de port publié : la base n'est joignable que depuis le réseau
+    # docker interne. `make db-prod` passe par `docker compose exec`.
     volumes:
       - db_data:/var/lib/postgresql/data
     networks:
       - histocar-network
+    security_opt:
+      - no-new-privileges:true
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s
@@ -43,6 +51,8 @@ services:
         condition: service_healthy
     networks:
       - histocar-network
+    security_opt:
+      - no-new-privileges:true
     restart: "no"
 
   server:
@@ -64,6 +74,8 @@ services:
         condition: service_completed_successfully
     networks:
       - histocar-network
+    security_opt:
+      - no-new-privileges:true
 
   web:
     container_name: histocar-web
@@ -81,21 +93,27 @@ services:
         condition: service_healthy
     networks:
       - histocar-network
+    security_opt:
+      - no-new-privileges:true
 
-  tunnel:
+  # Défini en amont dans cloudflared-tunnel/tunnel.compose.yml — étendu ici
+  # pour se rattacher au réseau HistoCar et attendre que web soit prêt.
+  cloudflared-tunnel:
     container_name: cloudflared-tunnel-histocar
-    image: cloudflare/cloudflared
-    restart: unless-stopped
+    # Override de la commande upstream : passe l'UUID en argument positionnel
+    # pour que cloudflared résolve le tunnel depuis le CLI. Le `tunnel:
+    # ${TUNNEL_UUID}` de config.yaml n'est pas interpolé par cloudflared
+    # lui-même, donc l'argument positionnel est ce qui fait foi.
+    command: >-
+      --config /etc/cloudflared/config.yaml
+      --cred-file /etc/cloudflared/${TUNNEL_UUID}.json
+      tunnel run ${TUNNEL_UUID}
     depends_on:
       - web
-    command: --config /etc/cloudflared/config.yaml --cred-file /etc/cloudflared/${TUNNEL_UUID}.json tunnel run histocar-tunnel
-    env_file:
-      - path: .env
-        format: raw
-    volumes:
-      - ./cloudflared:/etc/cloudflared:ro
     networks:
       - histocar-network
+    security_opt:
+      - no-new-privileges:true
 
 volumes:
   db_data:

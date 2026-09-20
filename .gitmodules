@@ -1,0 +1,3 @@
+[submodule "cloudflared-tunnel"]
+	path = cloudflared-tunnel
+	url = git@github.com:nmetahri/cloudflared-tunnel.git

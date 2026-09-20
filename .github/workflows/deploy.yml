@@ -1,0 +1,25 @@
+name: Deploy to my self-hosted server
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: 1. Checkout
+        uses: actions/checkout@v4
+        with:
+          # cloudflared-tunnel est un sous-module : requis pour que
+          # docker-compose.yml (include: cloudflared-tunnel/tunnel.compose.yml)
+          # trouve le fragment.
+          submodules: true
+
+      - name: 2. Copy env file
+        run: cp /home/runner-histocar/secrets/.env .env
+
+      - name: 3. Rebuild and Deploy Docker Services
+        run: make update-prod
