@@ -1,5 +1,6 @@
 import { type FormEvent, useState } from "react";
 import type { VehicleFormValues } from "@/api/client";
+import { todayIsoDate } from "@/format";
 
 type VehicleDraft = Record<keyof VehicleFormValues, string>;
 
@@ -8,35 +9,50 @@ const EMPTY_VEHICLE_DRAFT: VehicleDraft = {
   model: "",
   licensePlate: "",
   year: String(new Date().getFullYear()),
-  currentMileage: "",
+  initialMileage: "",
+  initialMileageDate: todayIsoDate(),
   engine: "",
   oilCapacity: "",
   oilChangeInterval: "",
 };
 
 function toVehicleDraft(values: VehicleFormValues): VehicleDraft {
-  return { ...values, year: String(values.year), currentMileage: String(values.currentMileage) };
+  return {
+    ...values,
+    year: String(values.year),
+    initialMileage: String(values.initialMileage),
+    initialMileageDate: values.initialMileageDate.slice(0, 10),
+  };
 }
 
 function toVehicleValues(draft: VehicleDraft): VehicleFormValues {
-  return { ...draft, year: Number(draft.year), currentMileage: Number(draft.currentMileage) };
+  return { ...draft, year: Number(draft.year), initialMileage: Number(draft.initialMileage) };
 }
+
+type VehicleFieldType = "text" | "number" | "date";
 
 interface VehicleField {
   name: keyof VehicleFormValues;
   label: string;
-  isNumeric: boolean;
+  type: VehicleFieldType;
+  hint?: string;
 }
 
 const VEHICLE_FIELDS: readonly VehicleField[] = [
-  { name: "make", label: "Marque", isNumeric: false },
-  { name: "model", label: "Modèle", isNumeric: false },
-  { name: "licensePlate", label: "Immatriculation", isNumeric: false },
-  { name: "year", label: "Année", isNumeric: true },
-  { name: "currentMileage", label: "Kilométrage actuel", isNumeric: true },
-  { name: "engine", label: "Motorisation", isNumeric: false },
-  { name: "oilCapacity", label: "Capacité huile", isNumeric: false },
-  { name: "oilChangeInterval", label: "Intervalle vidange", isNumeric: false },
+  { name: "make", label: "Marque", type: "text" },
+  { name: "model", label: "Modèle", type: "text" },
+  { name: "licensePlate", label: "Immatriculation", type: "text" },
+  { name: "year", label: "Année", type: "number" },
+  {
+    name: "initialMileage",
+    label: "Kilométrage initial",
+    type: "number",
+    hint: "Relevé de référence, à l'achat par exemple.",
+  },
+  { name: "initialMileageDate", label: "Date du kilométrage initial", type: "date" },
+  { name: "engine", label: "Motorisation", type: "text" },
+  { name: "oilCapacity", label: "Capacité huile", type: "text" },
+  { name: "oilChangeInterval", label: "Intervalle vidange", type: "text" },
 ];
 
 interface VehicleFormProps {
@@ -63,13 +79,14 @@ export function VehicleForm({ initialValues, submitLabel, onSubmit, onCancel }: 
           <label htmlFor={field.name}>{field.label}</label>
           <input
             id={field.name}
-            type={field.isNumeric ? "number" : "text"}
-            inputMode={field.isNumeric ? "numeric" : undefined}
-            min={field.isNumeric ? 0 : undefined}
+            type={field.type}
+            inputMode={field.type === "number" ? "numeric" : undefined}
+            min={field.type === "number" ? 0 : undefined}
             value={draft[field.name]}
             onChange={(event) => setDraft({ ...draft, [field.name]: event.target.value })}
             required
           />
+          {field.hint ? <span className="hint">{field.hint}</span> : null}
         </div>
       ))}
       <div className="form-actions">

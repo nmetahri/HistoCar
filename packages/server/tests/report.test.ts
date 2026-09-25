@@ -11,6 +11,8 @@ import {
 } from "@/report/report.data";
 import { buildReportFileName } from "@/report/report.routes";
 
+const CURRENT_MILEAGE = 123456;
+
 describe("formatDate", () => {
   it("renders day/month/year in UTC", () => {
     expect(formatDate(new Date("2026-03-05T23:30:00Z"))).toBe("05/03/2026");
@@ -49,33 +51,43 @@ describe("toReportModel", () => {
       maintenanceRecordFixture({ id: "recent", date: new Date("2026-01-01T00:00:00Z") }),
     ];
 
-    const model = toReportModel(vehicleFixture(), records);
+    const model = toReportModel(vehicleFixture(), records, CURRENT_MILEAGE);
 
     expect(model.rows.map((row) => row[0])).toEqual(["01/01/2026", "01/01/2024"]);
     expect(records[0]?.id).toBe("old");
   });
 
   it("fills the cost column and totals the known costs", () => {
-    const model = toReportModel(vehicleFixture(), [
-      maintenanceRecordFixture({ id: "a", costCents: 8990 }),
-      maintenanceRecordFixture({ id: "b", costCents: null }),
-      maintenanceRecordFixture({ id: "c", costCents: 120000 }),
-    ]);
+    const model = toReportModel(
+      vehicleFixture(),
+      [
+        maintenanceRecordFixture({ id: "a", costCents: 8990 }),
+        maintenanceRecordFixture({ id: "b", costCents: null }),
+        maintenanceRecordFixture({ id: "c", costCents: 120000 }),
+      ],
+      CURRENT_MILEAGE,
+    );
 
     expect(model.rows.map((row) => row[4])).toEqual(["89,90 €", "", "1 200,00 €"]);
     expect(model.totalCost).toBe("1 289,90 €");
   });
 
   it("omits the total when no cost is known", () => {
-    expect(toReportModel(vehicleFixture(), [maintenanceRecordFixture()]).totalCost).toBeNull();
+    expect(
+      toReportModel(vehicleFixture(), [maintenanceRecordFixture()], CURRENT_MILEAGE).totalCost,
+    ).toBeNull();
   });
 
   it("describes the vehicle and handles an empty history", () => {
-    const model = toReportModel(vehicleFixture(), []);
+    const model = toReportModel(vehicleFixture(), [], CURRENT_MILEAGE);
 
     expect(model.rows).toEqual([]);
     expect(model.title).toContain("Peugeot 208");
     expect(model.fields).toContainEqual({ label: "Immatriculation", value: "AB-123-CD" });
+    expect(model.fields).toContainEqual({
+      label: "Kilométrage initial",
+      value: "45 000 km au 01/06/2021",
+    });
     expect(model.fields).toContainEqual({ label: "Kilométrage actuel", value: "123 456 km" });
   });
 });
@@ -100,7 +112,7 @@ describe("buildReportFileName", () => {
 describe("buildMaintenancePdf", () => {
   it("produces a PDF document", async () => {
     const pdf = await buildMaintenancePdf(
-      toReportModel(vehicleFixture(), [maintenanceRecordFixture()]),
+      toReportModel(vehicleFixture(), [maintenanceRecordFixture()], CURRENT_MILEAGE),
     );
 
     expect(pdf.subarray(0, 4).toString()).toBe("%PDF");
@@ -115,7 +127,9 @@ describe("buildMaintenancePdf", () => {
       }),
     );
 
-    const pdf = await buildMaintenancePdf(toReportModel(vehicleFixture(), records));
+    const pdf = await buildMaintenancePdf(
+      toReportModel(vehicleFixture(), records, CURRENT_MILEAGE),
+    );
 
     const pageCount = Number(/\/Count (\d+)/.exec(pdf.toString("latin1"))?.[1]);
     expect(pageCount).toBeGreaterThan(1);

@@ -77,6 +77,7 @@ export const REPORT_COLUMN_HEADERS = ["Date", "Kilométrage", "Type", "Détails"
 export function toReportModel(
   vehicle: Vehicle,
   records: readonly MaintenanceRecord[],
+  currentMileage: number,
 ): ReportModel {
   const rows = [...records]
     .sort((a, b) => b.date.getTime() - a.date.getTime())
@@ -100,7 +101,11 @@ export function toReportModel(
       { label: "Modèle", value: model },
       { label: "Immatriculation", value: sanitizeWinAnsi(vehicle.licensePlate) },
       { label: "Année", value: String(vehicle.year) },
-      { label: "Kilométrage actuel", value: formatMileage(vehicle.currentMileage) },
+      {
+        label: "Kilométrage initial",
+        value: `${formatMileage(vehicle.initialMileage)} au ${formatDate(vehicle.initialMileageDate)}`,
+      },
+      { label: "Kilométrage actuel", value: formatMileage(currentMileage) },
       { label: "Motorisation", value: sanitizeWinAnsi(vehicle.engine) },
       { label: "Capacité huile", value: sanitizeWinAnsi(vehicle.oilCapacity) },
       { label: "Intervalle vidange préconisé", value: sanitizeWinAnsi(vehicle.oilChangeInterval) },

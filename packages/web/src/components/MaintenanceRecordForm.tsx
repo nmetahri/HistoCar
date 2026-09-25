@@ -5,8 +5,16 @@ import {
   ATTACHMENT_HINT,
   errorMessage,
 } from "@/components/attachment-files";
+import { formatMileage, todayIsoDate } from "@/format";
+import { estimateMileage, type MileageReading } from "@/mileage/estimate-mileage";
 
 const CENTS_PER_EURO = 100;
+
+const MILEAGE_ESTIMATE_HELP =
+  "Idéal pour enregistrer un ancien entretien dont vous ne connaissez plus le kilométrage. " +
+  "Le calcul part des relevés qui encadrent la date choisie (kilométrage initial, entretiens " +
+  "déjà saisis) et suppose un rythme de roulage régulier entre eux. Après le dernier relevé, il " +
+  "prolonge le rythme de la dernière année connue. Résultat arrondi à la centaine.";
 
 export type MaintenanceRecordDraft = Omit<MaintenanceRecordFormValues, "mileage" | "costCents"> & {
   mileage: string;
@@ -15,7 +23,7 @@ export type MaintenanceRecordDraft = Omit<MaintenanceRecordFormValues, "mileage"
 
 export function emptyMaintenanceRecordDraft(): MaintenanceRecordDraft {
   return {
-    date: new Date().toISOString().slice(0, 10),
+    date: todayIsoDate(),
     mileage: "",
     type: "",
     details: "",
@@ -40,15 +48,21 @@ export function toMaintenanceRecordValues({
 }
 
 interface MaintenanceRecordFormProps {
+  mileageReadings: readonly MileageReading[];
   onCreate: (values: MaintenanceRecordFormValues) => Promise<MaintenanceRecord>;
   onAttach: (recordId: string, files: readonly File[]) => Promise<void>;
 }
 
-export function MaintenanceRecordForm({ onCreate, onAttach }: MaintenanceRecordFormProps) {
+export function MaintenanceRecordForm({
+  mileageReadings,
+  onCreate,
+  onAttach,
+}: MaintenanceRecordFormProps) {
   const [draft, setDraft] = useState<MaintenanceRecordDraft>(emptyMaintenanceRecordDraft);
   const [files, setFiles] = useState<File[]>([]);
   const [fileInputKey, setFileInputKey] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const estimatedMileage = estimateMileage(mileageReadings, draft.date);
 
   function selectFiles(event: ChangeEvent<HTMLInputElement>): void {
     setFiles(Array.from(event.target.files ?? []));
@@ -105,10 +119,27 @@ export function MaintenanceRecordForm({ onCreate, onAttach }: MaintenanceRecordF
           type="number"
           inputMode="numeric"
           min={0}
+          placeholder={
+            estimatedMileage === null ? undefined : `≈ ${formatMileage(estimatedMileage)}`
+          }
           value={draft.mileage}
           onChange={(event) => setDraft({ ...draft, mileage: event.target.value })}
           required
         />
+        <span className="with-tooltip">
+          <button
+            type="button"
+            className="btn-link"
+            aria-describedby="mileage-estimate-help"
+            disabled={estimatedMileage === null}
+            onClick={() => setDraft({ ...draft, mileage: String(estimatedMileage) })}
+          >
+            Déduire depuis l'historique
+          </button>
+          <span role="tooltip" id="mileage-estimate-help" className="tooltip">
+            {MILEAGE_ESTIMATE_HELP}
+          </span>
+        </span>
       </div>
       <div className="field">
         <label htmlFor="type">Type</label>

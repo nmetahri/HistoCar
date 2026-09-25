@@ -23,7 +23,8 @@ model Vehicle {
   model              String
   licensePlate       String
   year               Int
-  currentMileage     Int
+  initialMileage     Int
+  initialMileageDate DateTime            @db.Date
   engine             String
   oilCapacity        String
   oilChangeInterval  String

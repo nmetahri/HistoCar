@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   api,
@@ -18,6 +18,8 @@ import {
 } from "@/components/MaintenanceRecordForm";
 import { VehicleForm } from "@/components/VehicleForm";
 import { VehicleInfo } from "@/components/VehicleInfo";
+import { formatMileage, todayIsoDate } from "@/format";
+import { estimateMileage, vehicleMileageReadings } from "@/mileage/estimate-mileage";
 
 const DELETE_VEHICLE_CONFIRMATION =
   "Supprimer ce véhicule ? Il pourra être restauré depuis la liste des véhicules.";
@@ -40,7 +42,8 @@ function toVehicleFormValues(vehicle: Vehicle): VehicleFormValues {
     model: vehicle.model,
     licensePlate: vehicle.licensePlate,
     year: vehicle.year,
-    currentMileage: vehicle.currentMileage,
+    initialMileage: vehicle.initialMileage,
+    initialMileageDate: vehicle.initialMileageDate,
     engine: vehicle.engine,
     oilCapacity: vehicle.oilCapacity,
     oilChangeInterval: vehicle.oilChangeInterval,
@@ -130,6 +133,8 @@ export function VehicleDetail() {
 
   const totalCost = sumCosts(vehicle.maintenanceRecords);
   const hasAttachments = vehicle.maintenanceRecords.some((record) => record.attachments.length > 0);
+  const mileageReadings = vehicleMileageReadings(vehicle);
+  const estimatedCurrentMileage = estimateMileage(mileageReadings, todayIsoDate());
 
   return (
     <main className="page">
@@ -166,12 +171,16 @@ export function VehicleDetail() {
           onCancel={() => setIsEditingVehicle(false)}
         />
       ) : (
-        <VehicleInfo vehicle={vehicle} />
+        <VehicleInfo vehicle={vehicle} estimatedMileage={estimatedCurrentMileage} />
       )}
 
       <section className="card">
         <h2>Ajouter un entretien</h2>
-        <MaintenanceRecordForm onCreate={addRecord} onAttach={attachToRecord} />
+        <MaintenanceRecordForm
+          mileageReadings={mileageReadings}
+          onCreate={addRecord}
+          onAttach={attachToRecord}
+        />
       </section>
 
       {vehicle.maintenanceRecords.length > 0 ? (
@@ -192,79 +201,85 @@ export function VehicleDetail() {
               <tbody>
                 {vehicle.maintenanceRecords.map((record) =>
                   editedRecordId === record.id ? (
-                    <tr key={record.id}>
-                      <td data-label="Date">
-                        <input
-                          type="date"
-                          value={editedValues.date}
-                          onChange={(event) =>
-                            setEditedValues({ ...editedValues, date: event.target.value })
-                          }
-                        />
-                      </td>
-                      <td data-label="Km">
-                        <input
-                          type="number"
-                          value={editedValues.mileage}
-                          onChange={(event) =>
-                            setEditedValues({ ...editedValues, mileage: event.target.value })
-                          }
-                        />
-                      </td>
-                      <td data-label="Type">
-                        <input
-                          value={editedValues.type}
-                          onChange={(event) =>
-                            setEditedValues({ ...editedValues, type: event.target.value })
-                          }
-                        />
-                      </td>
-                      <td data-label="Détails">
-                        <textarea
-                          value={editedValues.details}
-                          onChange={(event) =>
-                            setEditedValues({ ...editedValues, details: event.target.value })
-                          }
-                        />
-                        <AttachmentsEditor
-                          vehicleId={vehicleId}
-                          record={record}
-                          onChange={reload}
-                        />
-                      </td>
-                      <td data-label="Coût">
-                        <input
-                          type="number"
-                          inputMode="decimal"
-                          min={0}
-                          step={0.01}
-                          value={editedValues.cost}
-                          onChange={(event) =>
-                            setEditedValues({ ...editedValues, cost: event.target.value })
-                          }
-                        />
-                      </td>
-                      <td className="row-actions" data-label="Actions">
-                        <button
-                          type="button"
-                          className="btn-icon btn-icon-success"
-                          title="Enregistrer"
-                          aria-label="Enregistrer"
-                          onClick={() => saveEditing(record.id)}
-                        >
-                          ✓
-                        </button>
-                        <button
-                          type="button"
-                          className="btn-icon btn-icon-neutral"
-                          title="Annuler"
-                          aria-label="Annuler"
-                          onClick={cancelEditing}
-                        >
-                          ✕
-                        </button>
-                      </td>
-                    </tr>
+                    <Fragment key={record.id}>
+                      <tr className="editing-row">
+                        <td data-label="Date">
+                          <input
+                            type="date"
+                            value={editedValues.date}
+                            onChange={(event) =>
+                              setEditedValues({ ...editedValues, date: event.target.value })
+                            }
+                          />
+                        </td>
+                        <td data-label="Km">
+                          <input
+                            type="number"
+                            value={editedValues.mileage}
+                            onChange={(event) =>
+                              setEditedValues({ ...editedValues, mileage: event.target.value })
+                            }
+                          />
+                        </td>
+                        <td data-label="Type">
+                          <input
+                            value={editedValues.type}
+                            onChange={(event) =>
+                              setEditedValues({ ...editedValues, type: event.target.value })
+                            }
+                          />
+                        </td>
+                        <td data-label="Détails">
+                          <textarea
+                            value={editedValues.details}
+                            onChange={(event) =>
+                              setEditedValues({ ...editedValues, details: event.target.value })
+                            }
+                          />
+                        </td>
+                        <td data-label="Coût">
+                          <input
+                            type="number"
+                            inputMode="decimal"
+                            min={0}
+                            step={0.01}
+                            value={editedValues.cost}
+                            onChange={(event) =>
+                              setEditedValues({ ...editedValues, cost: event.target.value })
+                            }
+                          />
+                        </td>
+                        <td className="row-actions" data-label="Actions">
+                          <button
+                            type="button"
+                            className="btn-icon btn-icon-success"
+                            title="Enregistrer"
+                            aria-label="Enregistrer"
+                            onClick={() => saveEditing(record.id)}
+                          >
+                            ✓
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-icon btn-icon-neutral"
+                            title="Annuler"
+                            aria-label="Annuler"
+                            onClick={cancelEditing}
+                          >
+                            ✕
+                          </button>
+                        </td>
+                      </tr>
+                      <tr className="attachments-row">
+                        <td colSpan={6}>
+                          <AttachmentsEditor
+                            vehicleId={vehicleId}
+                            record={record}
+                            onChange={reload}
+                          />
+                        </td>
+                      </tr>
+                    </Fragment>
                   ) : (
                     <tr key={record.id}>
                       <td data-label="Date">{new Date(record.date).toLocaleDateString("fr-FR")}</td>
@@ -321,16 +336,36 @@ export function VehicleDetail() {
         <p className="muted">
           Historique complet du véhicule au format A4, prêt à imprimer ou à transmettre.
         </p>
-        <div className="report-actions">
-          <a className="btn btn-secondary" href={api.reportPdfUrl(vehicleId)} download>
-            Télécharger le PDF
-          </a>
-          {hasAttachments ? (
-            <a className="btn btn-secondary" href={api.attachmentsPdfUrl(vehicleId)} download>
-              Télécharger les justificatifs
-            </a>
-          ) : null}
-        </div>
+        {/* Formulaire natif : la réponse est un PDF en pièce jointe, le navigateur
+            le télécharge sans quitter la page. */}
+        <form className="report-form" method="get" action={api.reportPdfUrl(vehicleId)}>
+          <div className="field">
+            <label htmlFor="currentMileage">Kilométrage actuel</label>
+            <input
+              id="currentMileage"
+              name="currentMileage"
+              type="number"
+              inputMode="numeric"
+              min={0}
+              placeholder={
+                estimatedCurrentMileage === null
+                  ? undefined
+                  : `≈ ${formatMileage(estimatedCurrentMileage)}`
+              }
+              required
+            />
+          </div>
+          <div className="report-actions">
+            <button type="submit" className="btn btn-secondary">
+              Télécharger le PDF
+            </button>
+            {hasAttachments ? (
+              <a className="btn btn-secondary" href={api.attachmentsPdfUrl(vehicleId)} download>
+                Télécharger les justificatifs
+              </a>
+            ) : null}
+          </div>
+        </form>
       </section>
     </main>
   );

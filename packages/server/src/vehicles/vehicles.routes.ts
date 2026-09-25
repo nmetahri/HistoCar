@@ -45,9 +45,13 @@ vehiclesRouter.get(
 vehiclesRouter.post(
   "/vehicles",
   asyncRoute(async (req, res) => {
-    const data = vehicleSchema.parse(req.body);
+    const { initialMileageDate, ...rest } = vehicleSchema.parse(req.body);
     const vehicle = await prisma.vehicle.create({
-      data: { ...data, userId: getAuthUser(req).id },
+      data: {
+        ...rest,
+        initialMileageDate: new Date(initialMileageDate),
+        userId: getAuthUser(req).id,
+      },
     });
     res.status(StatusCodes.CREATED).json(vehicle);
   }),
@@ -57,10 +61,16 @@ vehiclesRouter.put(
   "/vehicles/:id",
   asyncRoute(async (req, res) => {
     const id = req.params["id"] as string;
-    const data = vehicleUpdateSchema.parse(req.body);
+    const { initialMileageDate, ...rest } = vehicleUpdateSchema.parse(req.body);
 
     await assertVehicleOwned(id, getAuthUser(req).id);
-    const vehicle = await prisma.vehicle.update({ where: { id }, data });
+    const vehicle = await prisma.vehicle.update({
+      where: { id },
+      data: {
+        ...rest,
+        ...(initialMileageDate ? { initialMileageDate: new Date(initialMileageDate) } : {}),
+      },
+    });
     res.json(vehicle);
   }),
 );

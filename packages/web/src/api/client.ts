@@ -8,7 +8,8 @@ export interface Vehicle {
   model: string;
   licensePlate: string;
   year: number;
-  currentMileage: number;
+  initialMileage: number;
+  initialMileageDate: string;
   engine: string;
   oilCapacity: string;
   oilChangeInterval: string;

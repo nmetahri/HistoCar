@@ -204,7 +204,11 @@ describe("POST /api/auth/register", () => {
 
 describe("requireAuth", () => {
   it("blocks protected routes without a cookie", async () => {
-    for (const path of ["/api/vehicles", "/api/vehicles/veh_1", "/api/vehicles/veh_1/report.pdf"]) {
+    for (const path of [
+      "/api/vehicles",
+      "/api/vehicles/veh_1",
+      "/api/vehicles/veh_1/report.pdf?currentMileage=1",
+    ]) {
       const response = await request(app).get(path);
       expect(response.status, path).toBe(StatusCodes.UNAUTHORIZED);
     }
@@ -285,16 +289,16 @@ describe("vehicles", () => {
   it("creates a vehicle owned by the signed-in user", async () => {
     const vehicle = vehicleFixture();
     prismaMock.vehicle.create.mockResolvedValue(vehicle);
-    const { id, userId, active, createdAt, updatedAt, ...data } = vehicle;
+    const { id, userId, active, createdAt, updatedAt, initialMileageDate, ...data } = vehicle;
 
     const response = await request(app)
       .post("/api/vehicles")
       .set("Cookie", await sessionCookie())
-      .send(data);
+      .send({ ...data, initialMileageDate: "2021-06-01" });
 
     expect(response.status).toBe(StatusCodes.CREATED);
     expect(prismaMock.vehicle.create).toHaveBeenCalledWith({
-      data: { ...data, userId: TEST_USER_ID },
+      data: { ...data, initialMileageDate, userId: TEST_USER_ID },
     });
   });
 
@@ -304,7 +308,7 @@ describe("vehicles", () => {
     const response = await request(app)
       .put("/api/vehicles/veh_other")
       .set("Cookie", await sessionCookie())
-      .send({ currentMileage: 1 });
+      .send({ initialMileage: 1 });
 
     expect(response.status).toBe(StatusCodes.NOT_FOUND);
     expect(prismaMock.vehicle.update).not.toHaveBeenCalled();
@@ -347,11 +351,11 @@ describe("vehicles", () => {
     await request(app)
       .put("/api/vehicles/veh_1")
       .set("Cookie", await sessionCookie())
-      .send({ currentMileage: 130000, active: false });
+      .send({ initialMileage: 130000, active: false });
 
     expect(prismaMock.vehicle.update).toHaveBeenCalledWith({
       where: { id: "veh_1" },
-      data: { currentMileage: 130000 },
+      data: { initialMileage: 130000 },
     });
   });
 
@@ -497,7 +501,7 @@ describe("GET /api/vehicles/:id/report.pdf", () => {
     });
 
     const response = await request(app)
-      .get("/api/vehicles/veh_1/report.pdf")
+      .get("/api/vehicles/veh_1/report.pdf?currentMileage=130000")
       .set("Cookie", await sessionCookie());
 
     expect(response.status).toBe(StatusCodes.OK);
@@ -509,11 +513,22 @@ describe("GET /api/vehicles/:id/report.pdf", () => {
     expect(response.body.subarray(0, 4).toString()).toBe("%PDF");
   });
 
+  it("requires the current mileage", async () => {
+    for (const query of ["", "?currentMileage=-5", "?currentMileage=abc"]) {
+      const response = await request(app)
+        .get(`/api/vehicles/veh_1/report.pdf${query}`)
+        .set("Cookie", await sessionCookie());
+
+      expect(response.status).toBe(StatusCodes.BAD_REQUEST);
+    }
+    expect(prismaMock.vehicle.findFirst).not.toHaveBeenCalled();
+  });
+
   it("returns 404 for a vehicle owned by someone else", async () => {
     prismaMock.vehicle.findFirst.mockResolvedValue(null);
 
     const response = await request(app)
-      .get("/api/vehicles/veh_other/report.pdf")
+      .get("/api/vehicles/veh_other/report.pdf?currentMileage=130000")
       .set("Cookie", await sessionCookie());
 
     expect(response.status).toBe(StatusCodes.NOT_FOUND);
@@ -536,7 +551,7 @@ describe("errorHandler", () => {
     const response = await request(app)
       .put("/api/vehicles/veh_1")
       .set("Cookie", await sessionCookie())
-      .send({ currentMileage: 1 });
+      .send({ initialMileage: 1 });
 
     expect(response.status).toBe(StatusCodes.NOT_FOUND);
     expect(response.body.message).toBe("Ressource introuvable");

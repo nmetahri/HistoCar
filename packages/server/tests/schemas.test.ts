@@ -10,7 +10,8 @@ const VALID_VEHICLE = {
   model: "208",
   licensePlate: "AB-123-CD",
   year: 2019,
-  currentMileage: 123456,
+  initialMileage: 45000,
+  initialMileageDate: "2021-06-01",
   engine: "1.2 PureTech",
   oilCapacity: "3,5 L",
   oilChangeInterval: "15 000 km",
@@ -33,8 +34,8 @@ describe("vehicleSchema", () => {
   });
 
   it("rejects negative or fractional mileage", () => {
-    expect(vehicleSchema.safeParse({ ...VALID_VEHICLE, currentMileage: -1 }).success).toBe(false);
-    expect(vehicleSchema.safeParse({ ...VALID_VEHICLE, currentMileage: 1.5 }).success).toBe(false);
+    expect(vehicleSchema.safeParse({ ...VALID_VEHICLE, initialMileage: -1 }).success).toBe(false);
+    expect(vehicleSchema.safeParse({ ...VALID_VEHICLE, initialMileage: 1.5 }).success).toBe(false);
   });
 
   it("rejects an out-of-range year", () => {
@@ -43,7 +44,7 @@ describe("vehicleSchema", () => {
   });
 
   it("rejects mileage sent as a string", () => {
-    expect(vehicleSchema.safeParse({ ...VALID_VEHICLE, currentMileage: "123" }).success).toBe(
+    expect(vehicleSchema.safeParse({ ...VALID_VEHICLE, initialMileage: "123" }).success).toBe(
       false,
     );
   });
@@ -57,7 +58,7 @@ describe("vehicleSchema", () => {
 
 describe("vehicleUpdateSchema", () => {
   it("accepts a partial update", () => {
-    expect(vehicleUpdateSchema.safeParse({ currentMileage: 130000 }).success).toBe(true);
+    expect(vehicleUpdateSchema.safeParse({ initialMileage: 130000 }).success).toBe(true);
     expect(vehicleUpdateSchema.safeParse({}).success).toBe(true);
   });
 

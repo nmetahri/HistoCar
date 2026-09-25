@@ -199,7 +199,7 @@ h2 {
   max-width: none;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  align-items: end;
+  align-items: start;
   gap: 0.9rem 1rem;
 }
 
@@ -281,6 +281,7 @@ td textarea:focus {
   font-family: inherit;
   font-size: 0.9rem;
   font-weight: 600;
+  text-decoration: none;
   cursor: pointer;
   transition:
     transform 0.1s ease,
@@ -661,6 +662,21 @@ tfoot th {
   overflow-wrap: anywhere;
 }
 
+tbody tr.editing-row,
+tbody tr.attachments-row {
+  background: var(--zinc-50);
+}
+
+.attachments-row td {
+  max-width: none;
+  border-top: none;
+  padding-top: 0;
+}
+
+.attachments-row .attachments-editor {
+  margin-top: 0;
+}
+
 td input[type="file"] {
   border: none;
   padding: 0;
@@ -693,15 +709,93 @@ td input[type="file"] {
     display: none;
   }
 
-  td[data-label="Détails"] {
-    flex-wrap: wrap;
-  }
-
-  .attachments-editor {
-    flex-basis: 100%;
-  }
-
   .cost-cell {
     text-align: left;
+  }
+}
+
+.report-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.9rem 1rem;
+}
+
+.btn-link {
+  align-self: flex-start;
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: 0.8rem;
+  text-align: left;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.btn-link:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.btn-link:disabled {
+  color: var(--texte-discret);
+  cursor: default;
+}
+
+.with-tooltip {
+  position: relative;
+  align-self: flex-start;
+}
+
+.tooltip {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  left: 0;
+  z-index: 10;
+  width: min(300px, 80vw);
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--rayon-sm);
+  background: var(--zinc-900);
+  color: var(--texte-inverse);
+  font-size: 0.8rem;
+  line-height: 1.4;
+  box-shadow: var(--ombre);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s ease;
+}
+
+.with-tooltip:hover .tooltip,
+.with-tooltip:focus-within .tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
+@media (max-width: 600px) {
+  .report-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+@media (max-width: 600px) {
+  /* Ligne éditée et justificatifs forment une seule carte sur mobile. */
+  tbody tr.editing-row {
+    margin-bottom: 0;
+    border-bottom: none;
+    border-radius: var(--rayon-sm) var(--rayon-sm) 0 0;
+  }
+
+  tbody tr.attachments-row {
+    border-top: none;
+    border-radius: 0 0 var(--rayon-sm) var(--rayon-sm);
+  }
+
+  .attachments-row td {
+    display: block;
+  }
+
+  .attachments-row td::before {
+    display: none;
   }
 }
