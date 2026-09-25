@@ -1,7 +1,7 @@
 DC_PROD=docker compose -f docker-compose.yml
 DC_DEV=docker compose -f docker-compose.dev.yml
 
-.PHONY: help setup verify lint typecheck test hash-password set-password migrate \
+.PHONY: help setup verify lint typecheck test migrate \
         dev dev-down dev-logs dev-logs-server dev-logs-web dev-shell dev-root-shell dev-db dev-prune \
         up-prod down-prod update-prod logs-prod shell-prod db-prod prune tunnel-check
 
@@ -19,26 +19,12 @@ setup: ## [SETUP] Crée le .env depuis .env.dist et installe les dépendances h�
 		echo "ℹ️  .env existe déjà — pas écrasé."; \
 	else \
 		cp .env.dist .env; \
-		echo "✅ .env créé depuis .env.dist — renseigne JWT_SECRET et AUTH_PASSWORD_HASH."; \
+		echo "✅ .env créé depuis .env.dist — renseigne JWT_SECRET et SIGNUP_INVITE_CODE."; \
 	fi
 	@echo "📦 Installation des dépendances (npm workspaces)..."
 	npm install
 	npm run prisma:generate -w packages/server
-	@echo "✅ Prêt. Lance 'make dev' (docker) ou 'make hash-password PASSWORD=...'."
-
-hash-password: ## [SETUP] Affiche un hash bcrypt (usage: make hash-password PASSWORD=secret)
-	@if [ -z "$(PASSWORD)" ]; then echo "❌ Usage : make hash-password PASSWORD=<mot-de-passe>"; exit 1; fi
-	@npm run --silent hash-password -w packages/server -- '$(PASSWORD)'
-
-set-password: ## [SETUP] Génère le hash ET l'écrit dans .env (usage: make set-password PASSWORD=secret)
-	@if [ -z "$(PASSWORD)" ]; then echo "❌ Usage : make set-password PASSWORD=<mot-de-passe>"; exit 1; fi
-	@if [ ! -f .env ]; then echo "❌ .env absent — lance 'make setup' d'abord."; exit 1; fi
-	@hash=$$(npm run --silent hash-password -w packages/server -- '$(PASSWORD)') && \
-	  grep -v '^AUTH_PASSWORD_HASH=' .env > .env.tmp && \
-	  printf 'AUTH_PASSWORD_HASH=%s\n' "$$hash" >> .env.tmp && \
-	  mv .env.tmp .env
-	@echo "✅ AUTH_PASSWORD_HASH écrit dans .env (sans guillemets — obligatoire avec format: raw)."
-	@echo "   Redémarre le serveur : make dev  (ou make update-prod)"
+	@echo "✅ Prêt. Lance 'make dev'."
 
 tunnel-check: ## [SETUP] Vérifie la config du tunnel cloudflare avant un up-prod
 	@grep -q '^TUNNEL_UUID=.\+' .env || { echo "❌ TUNNEL_UUID vide dans .env"; exit 1; }

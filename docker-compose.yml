@@ -19,9 +19,7 @@ services:
     container_name: histocar-db
     image: postgres:16-alpine
     restart: unless-stopped
-    env_file:
-      - path: .env
-        format: raw
+    env_file: .env
     # Pas de port publié : la base n'est joignable que depuis le réseau
     # docker interne. `make db-prod` passe par `docker compose exec`.
     volumes:
@@ -42,13 +40,8 @@ services:
       context: .
       dockerfile: packages/server/Dockerfile
       target: builder
-    # Le bootstrap rattache les véhicules antérieurs au compte AUTH_USERNAME.
-    command: >
-      sh -c "npx prisma migrate deploy --schema packages/server/prisma/schema.prisma
-      && node packages/server/dist/scripts/bootstrap-owner.js"
-    env_file:
-      - path: .env
-        format: raw
+    command: npx prisma migrate deploy --schema packages/server/prisma/schema.prisma
+    env_file: .env
     depends_on:
       db:
         condition: service_healthy
@@ -65,9 +58,7 @@ services:
       dockerfile: packages/server/Dockerfile
       target: runtime
     restart: unless-stopped
-    env_file:
-      - path: .env
-        format: raw
+    env_file: .env
     expose:
       - "3001"
     depends_on:
