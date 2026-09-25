@@ -240,7 +240,7 @@ describe("vehicles", () => {
       .set("Cookie", await sessionCookie());
 
     expect(prismaMock.vehicle.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { userId: TEST_USER_ID } }),
+      expect.objectContaining({ where: { userId: TEST_USER_ID, active: true } }),
     );
   });
 
@@ -268,7 +268,7 @@ describe("vehicles", () => {
   it("creates a vehicle owned by the signed-in user", async () => {
     const vehicle = vehicleFixture();
     prismaMock.vehicle.create.mockResolvedValue(vehicle);
-    const { id, userId, createdAt, updatedAt, ...data } = vehicle;
+    const { id, userId, active, createdAt, updatedAt, ...data } = vehicle;
 
     const response = await request(app)
       .post("/api/vehicles")
@@ -292,7 +292,7 @@ describe("vehicles", () => {
     expect(response.status).toBe(404);
     expect(prismaMock.vehicle.update).not.toHaveBeenCalled();
     expect(prismaMock.vehicle.findFirst).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: "veh_other", userId: TEST_USER_ID } }),
+      expect.objectContaining({ where: { id: "veh_other", userId: TEST_USER_ID, active: true } }),
     );
   });
 
@@ -305,6 +305,82 @@ describe("vehicles", () => {
 
     expect(response.status).toBe(404);
     expect(prismaMock.vehicle.delete).not.toHaveBeenCalled();
+  });
+
+  it("archives a vehicle on delete instead of removing it", async () => {
+    prismaMock.vehicle.findFirst.mockResolvedValue({ id: "veh_1" });
+    prismaMock.vehicle.update.mockResolvedValue(vehicleFixture({ active: false }));
+
+    const response = await request(app)
+      .delete("/api/vehicles/veh_1")
+      .set("Cookie", await sessionCookie());
+
+    expect(response.status).toBe(204);
+    expect(prismaMock.vehicle.delete).not.toHaveBeenCalled();
+    expect(prismaMock.vehicle.update).toHaveBeenCalledWith({
+      where: { id: "veh_1" },
+      data: { active: false },
+    });
+  });
+
+  it("ignores an active flag sent through update", async () => {
+    prismaMock.vehicle.findFirst.mockResolvedValue({ id: "veh_1" });
+    prismaMock.vehicle.update.mockResolvedValue(vehicleFixture());
+
+    await request(app)
+      .put("/api/vehicles/veh_1")
+      .set("Cookie", await sessionCookie())
+      .send({ currentMileage: 130000, active: false });
+
+    expect(prismaMock.vehicle.update).toHaveBeenCalledWith({
+      where: { id: "veh_1" },
+      data: { currentMileage: 130000 },
+    });
+  });
+
+  it("only lists the archived vehicles of the signed-in user", async () => {
+    prismaMock.vehicle.findMany.mockResolvedValue([vehicleFixture({ active: false })]);
+
+    const response = await request(app)
+      .get("/api/vehicles/archived")
+      .set("Cookie", await sessionCookie());
+
+    expect(response.status).toBe(200);
+    expect(response.body).toHaveLength(1);
+    expect(prismaMock.vehicle.findFirst).not.toHaveBeenCalled();
+    expect(prismaMock.vehicle.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { userId: TEST_USER_ID, active: false } }),
+    );
+  });
+
+  it("restores an archived vehicle", async () => {
+    prismaMock.vehicle.findFirst.mockResolvedValue({ id: "veh_1" });
+    prismaMock.vehicle.update.mockResolvedValue(vehicleFixture());
+
+    const response = await request(app)
+      .post("/api/vehicles/veh_1/restore")
+      .set("Cookie", await sessionCookie());
+
+    expect(response.status).toBe(200);
+    expect(response.body.active).toBe(true);
+    expect(prismaMock.vehicle.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: "veh_1", userId: TEST_USER_ID, active: false } }),
+    );
+    expect(prismaMock.vehicle.update).toHaveBeenCalledWith({
+      where: { id: "veh_1" },
+      data: { active: true },
+    });
+  });
+
+  it("refuses to restore a vehicle that is not archived or not owned", async () => {
+    prismaMock.vehicle.findFirst.mockResolvedValue(null);
+
+    const response = await request(app)
+      .post("/api/vehicles/veh_other/restore")
+      .set("Cookie", await sessionCookie());
+
+    expect(response.status).toBe(404);
+    expect(prismaMock.vehicle.update).not.toHaveBeenCalled();
   });
 });
 
@@ -368,7 +444,11 @@ describe("maintenance records", () => {
     expect(prismaMock.maintenanceRecord.delete).not.toHaveBeenCalled();
     expect(prismaMock.maintenanceRecord.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { id: "rec_1", vehicleId: "veh_other", vehicle: { userId: TEST_USER_ID } },
+        where: {
+          id: "rec_1",
+          vehicleId: "veh_other",
+          vehicle: { userId: TEST_USER_ID, active: true },
+        },
       }),
     );
   });
@@ -403,7 +483,7 @@ describe("GET /api/vehicles/:id/report.pdf", () => {
 
     expect(response.status).toBe(404);
     expect(prismaMock.vehicle.findFirst).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: "veh_other", userId: TEST_USER_ID } }),
+      expect.objectContaining({ where: { id: "veh_other", userId: TEST_USER_ID, active: true } }),
     );
   });
 });

@@ -243,6 +243,18 @@ td textarea:focus {
   box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
+.inline-form .field-wide {
+  grid-column: 1 / -1;
+}
+
+.inline-form .btn {
+  justify-self: start;
+}
+
+.field textarea {
+  resize: vertical;
+}
+
 .login-form {
   max-width: 340px;
   width: 100%;
@@ -306,6 +318,75 @@ td textarea:focus {
 .btn-ghost:hover {
   background: var(--zinc-100);
   color: var(--texte);
+}
+
+.btn-danger {
+  background: var(--danger);
+  color: var(--texte-inverse);
+}
+
+.btn-danger:hover {
+  background: var(--danger-hover);
+}
+
+.header-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.vehicle-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 0.85rem 1.25rem;
+  margin: 0;
+}
+
+.vehicle-info dt {
+  color: var(--texte-discret);
+  font-size: 0.82rem;
+}
+
+.vehicle-info dd {
+  margin: 0.15rem 0 0;
+  font-weight: 500;
+}
+
+.report-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.report-card h2 {
+  margin-bottom: 0;
+}
+
+@media (max-width: 600px) {
+  .report-card .btn {
+    align-self: stretch;
+  }
+}
+
+.archived-section summary {
+  cursor: pointer;
+  color: var(--texte-discret);
+}
+
+.archived-list {
+  list-style: none;
+  padding: 0;
+  margin: 0.85rem 0 0;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.archived-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  color: var(--texte-discret);
 }
 
 .error {

@@ -26,6 +26,7 @@ export function vehicleFixture(overrides: Partial<Vehicle> = {}): Vehicle {
     engine: "1.2 PureTech",
     oilCapacity: "3,5 L",
     oilChangeInterval: "15 000 km",
+    active: true,
     createdAt: new Date("2026-01-01T00:00:00Z"),
     updatedAt: new Date("2026-01-01T00:00:00Z"),
     ...overrides,

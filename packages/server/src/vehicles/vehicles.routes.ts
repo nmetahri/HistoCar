@@ -2,7 +2,11 @@ import { Router } from "express";
 import { getAuthUser } from "@/auth/auth.user";
 import { asyncRoute } from "@/http/errors";
 import { prisma } from "@/prisma";
-import { assertVehicleOwned, findOwnedVehicle } from "@/vehicles/vehicles.access";
+import {
+  assertArchivedVehicleOwned,
+  assertVehicleOwned,
+  findOwnedVehicle,
+} from "@/vehicles/vehicles.access";
 import { vehicleSchema, vehicleUpdateSchema } from "@/vehicles/vehicles.schema";
 
 export const vehiclesRouter = Router();
@@ -11,8 +15,19 @@ vehiclesRouter.get(
   "/vehicles",
   asyncRoute(async (req, res) => {
     const vehicles = await prisma.vehicle.findMany({
-      where: { userId: getAuthUser(req).id },
+      where: { userId: getAuthUser(req).id, active: true },
       orderBy: { make: "asc" },
+    });
+    res.json(vehicles);
+  }),
+);
+
+vehiclesRouter.get(
+  "/vehicles/archived",
+  asyncRoute(async (req, res) => {
+    const vehicles = await prisma.vehicle.findMany({
+      where: { userId: getAuthUser(req).id, active: false },
+      orderBy: { updatedAt: "desc" },
     });
     res.json(vehicles);
   }),
@@ -55,7 +70,18 @@ vehiclesRouter.delete(
     const id = req.params["id"] as string;
 
     await assertVehicleOwned(id, getAuthUser(req).id);
-    await prisma.vehicle.delete({ where: { id } });
+    await prisma.vehicle.update({ where: { id }, data: { active: false } });
     res.status(204).send();
+  }),
+);
+
+vehiclesRouter.post(
+  "/vehicles/:id/restore",
+  asyncRoute(async (req, res) => {
+    const id = req.params["id"] as string;
+
+    await assertArchivedVehicleOwned(id, getAuthUser(req).id);
+    const vehicle = await prisma.vehicle.update({ where: { id }, data: { active: true } });
+    res.json(vehicle);
   }),
 );

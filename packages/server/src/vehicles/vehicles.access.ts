@@ -7,18 +7,24 @@ export type VehicleWithRecords = Prisma.VehicleGetPayload<{
 }>;
 
 // Un véhicule appartenant à quelqu'un d'autre est traité comme inexistant :
-// répondre 403 confirmerait son existence.
+// répondre 403 confirmerait son existence. Un véhicule supprimé (inactif)
+// l'est aussi, sauf pour sa restauration.
 const notFound = (): HttpError => new HttpError(404, "Véhicule introuvable");
 
-export async function assertVehicleOwned(vehicleId: string, userId: string): Promise<void> {
-  const vehicle = await prisma.vehicle.findFirst({
-    where: { id: vehicleId, userId },
-    select: { id: true },
-  });
+async function assertVehicleExists(where: Prisma.VehicleWhereInput): Promise<void> {
+  const vehicle = await prisma.vehicle.findFirst({ where, select: { id: true } });
 
   if (!vehicle) {
     throw notFound();
   }
+}
+
+export function assertVehicleOwned(vehicleId: string, userId: string): Promise<void> {
+  return assertVehicleExists({ id: vehicleId, userId, active: true });
+}
+
+export function assertArchivedVehicleOwned(vehicleId: string, userId: string): Promise<void> {
+  return assertVehicleExists({ id: vehicleId, userId, active: false });
 }
 
 export async function findOwnedVehicle(
@@ -26,7 +32,7 @@ export async function findOwnedVehicle(
   userId: string,
 ): Promise<VehicleWithRecords> {
   const vehicle = await prisma.vehicle.findFirst({
-    where: { id: vehicleId, userId },
+    where: { id: vehicleId, userId, active: true },
     include: { maintenanceRecords: { orderBy: { date: "desc" } } },
   });
 

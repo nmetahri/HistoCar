@@ -19,7 +19,7 @@ async function assertRecordOwned(
   userId: string,
 ): Promise<void> {
   const record = await prisma.maintenanceRecord.findFirst({
-    where: { id: recordId, vehicleId, vehicle: { userId } },
+    where: { id: recordId, vehicleId, vehicle: { userId, active: true } },
     select: { id: true },
   });
 

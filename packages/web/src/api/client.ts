@@ -87,6 +87,8 @@ export const api = {
   updateVehicle: (id: string, values: Partial<VehicleFormValues>) =>
     request<Vehicle>(`/vehicles/${id}`, { method: "PUT", body: JSON.stringify(values) }),
   deleteVehicle: (id: string) => request<void>(`/vehicles/${id}`, { method: "DELETE" }),
+  listArchivedVehicles: () => request<Vehicle[]>("/vehicles/archived"),
+  restoreVehicle: (id: string) => request<Vehicle>(`/vehicles/${id}/restore`, { method: "POST" }),
 
   createMaintenanceRecord: (vehicleId: string, values: MaintenanceRecordFormValues) =>
     request<MaintenanceRecord>(`/vehicles/${vehicleId}/maintenance`, {
