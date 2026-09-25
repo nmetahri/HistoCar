@@ -1,4 +1,5 @@
 import type { Request } from "express";
+import { StatusCodes } from "http-status-codes";
 import { HttpError } from "@/http/errors";
 
 export interface AuthenticatedUser {
@@ -10,7 +11,7 @@ export interface AuthenticatedUser {
 // présence de req.user, mais le type reste optionnel côté Express.
 export function getAuthUser(req: Request): AuthenticatedUser {
   if (!req.user) {
-    throw new HttpError(401, "Non authentifié");
+    throw new HttpError(StatusCodes.UNAUTHORIZED, "Non authentifié");
   }
   return req.user;
 }

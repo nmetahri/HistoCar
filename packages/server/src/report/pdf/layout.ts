@@ -22,6 +22,6 @@ export const FONT_SIZES = {
   footer: 7,
 } as const;
 
-// Date, kilométrage, type, détails — somme égale à 1, appliquée à la largeur
-// utile de la page.
-export const COLUMN_RATIOS = [0.14, 0.16, 0.2, 0.5] as const;
+// Date, kilométrage, type, détails, coût — somme égale à 1, appliquée à la
+// largeur utile de la page.
+export const COLUMN_RATIOS = [0.12, 0.14, 0.18, 0.44, 0.12] as const;

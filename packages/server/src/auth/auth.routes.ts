@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import bcrypt from "bcrypt";
 import { Router } from "express";
+import { StatusCodes } from "http-status-codes";
 import { z } from "zod";
 import { COOKIE_NAME, requireAuth } from "@/auth/auth.middleware";
 import { issueSession } from "@/auth/auth.session";
@@ -47,7 +48,7 @@ async function createUser(username: string, password: string): Promise<Authentic
     });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-      throw new HttpError(409, "Ce nom d'utilisateur est déjà pris");
+      throw new HttpError(StatusCodes.CONFLICT, "Ce nom d'utilisateur est déjà pris");
     }
     throw error;
   }
@@ -59,7 +60,7 @@ authRouter.post(
     const parsed = registrationSchema.safeParse(req.body);
     if (!parsed.success) {
       throw new HttpError(
-        400,
+        StatusCodes.BAD_REQUEST,
         `Nom d'utilisateur invalide (3 à 32 caractères : lettres, chiffres, - ou _) ` +
           `ou mot de passe trop court (${MIN_PASSWORD_LENGTH} caractères minimum)`,
       );
@@ -70,7 +71,7 @@ authRouter.post(
 
     const user = await createUser(username, password);
     issueSession(res, user);
-    res.status(201).json({ username: user.username });
+    res.status(StatusCodes.CREATED).json({ username: user.username });
   }),
 );
 
@@ -79,7 +80,7 @@ authRouter.post(
   asyncRoute(async (req, res) => {
     const parsed = credentialsSchema.safeParse(req.body);
     if (!parsed.success) {
-      throw new HttpError(400, "Identifiants invalides");
+      throw new HttpError(StatusCodes.BAD_REQUEST, "Identifiants invalides");
     }
 
     const user = await prisma.user.findUnique({
@@ -93,7 +94,7 @@ authRouter.post(
     );
 
     if (!user || !passwordMatches) {
-      throw new HttpError(401, "Identifiants incorrects");
+      throw new HttpError(StatusCodes.UNAUTHORIZED, "Identifiants incorrects");
     }
 
     issueSession(res, user);
@@ -103,7 +104,7 @@ authRouter.post(
 
 authRouter.post("/auth/logout", (_req, res) => {
   res.clearCookie(COOKIE_NAME);
-  res.status(204).send();
+  res.status(StatusCodes.NO_CONTENT).send();
 });
 
 authRouter.get("/auth/me", requireAuth, (req, res) => {

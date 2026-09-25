@@ -1,4 +1,5 @@
 import type { RequestHandler } from "express";
+import { StatusCodes } from "http-status-codes";
 import jwt from "jsonwebtoken";
 import { env } from "@/env";
 import { asyncMiddleware } from "@/http/errors";
@@ -23,7 +24,7 @@ export const requireAuth: RequestHandler = asyncMiddleware(async (req, res, next
   const userId = token ? readUserId(token) : null;
 
   if (!userId) {
-    res.status(401).json({ message: "Non authentifié" });
+    res.status(StatusCodes.UNAUTHORIZED).json({ message: "Non authentifié" });
     return;
   }
 
@@ -37,7 +38,7 @@ export const requireAuth: RequestHandler = asyncMiddleware(async (req, res, next
 
   if (!user) {
     res.clearCookie(COOKIE_NAME);
-    res.status(401).json({ message: "Session invalide ou expirée" });
+    res.status(StatusCodes.UNAUTHORIZED).json({ message: "Session invalide ou expirée" });
     return;
   }
 

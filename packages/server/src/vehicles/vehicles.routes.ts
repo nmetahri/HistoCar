@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { StatusCodes } from "http-status-codes";
 import { getAuthUser } from "@/auth/auth.user";
 import { asyncRoute } from "@/http/errors";
 import { prisma } from "@/prisma";
@@ -48,7 +49,7 @@ vehiclesRouter.post(
     const vehicle = await prisma.vehicle.create({
       data: { ...data, userId: getAuthUser(req).id },
     });
-    res.status(201).json(vehicle);
+    res.status(StatusCodes.CREATED).json(vehicle);
   }),
 );
 
@@ -71,7 +72,7 @@ vehiclesRouter.delete(
 
     await assertVehicleOwned(id, getAuthUser(req).id);
     await prisma.vehicle.update({ where: { id }, data: { active: false } });
-    res.status(204).send();
+    res.status(StatusCodes.NO_CONTENT).send();
   }),
 );
 

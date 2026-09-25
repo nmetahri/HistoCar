@@ -58,6 +58,19 @@ function drawFields(doc: PDFKit.PDFDocument, fields: readonly ReportField[]): vo
   doc.y = panelTop + panelHeight + 12;
 }
 
+function drawTotalCost(doc: PDFKit.PDFDocument, totalCost: string | null): void {
+  if (totalCost === null) {
+    return;
+  }
+
+  doc.y += 6;
+  doc.font(FONT_BOLD).fontSize(FONT_SIZES.field).fillColor(COLORS.text);
+  doc.text(`Coût total : ${totalCost}`, doc.page.margins.left, doc.y, {
+    width: contentWidth(doc),
+    align: "right",
+  });
+}
+
 function drawFooter(doc: PDFKit.PDFDocument): void {
   const top = doc.y + 10;
   doc
@@ -95,6 +108,7 @@ export function buildMaintenancePdf(model: ReportModel): Promise<Buffer> {
     columnWidths: distributeColumnWidths(contentWidth(doc), COLUMN_RATIOS),
     rows: model.rows,
   });
+  drawTotalCost(doc, model.totalCost);
   drawFooter(doc);
   doc.end();
 

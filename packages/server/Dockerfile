@@ -28,6 +28,8 @@ COPY --from=prod-deps /app/node_modules node_modules
 COPY --from=builder /app/node_modules/.prisma node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma/client node_modules/@prisma/client
 COPY --from=builder /app/packages/server/dist packages/server/dist
+# Créé ici pour qu'un volume nommé vierge hérite du propriétaire node.
+RUN mkdir -p /app/uploads && chown node:node /app/uploads
 USER node
 EXPOSE 3001
 HEALTHCHECK --interval=10s --timeout=3s --start-period=10s --retries=5 \

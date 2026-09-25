@@ -2,6 +2,7 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import express, { type Express } from "express";
 import helmet from "helmet";
+import { attachmentsRouter } from "@/attachments/attachments.routes";
 import { requireAuth } from "@/auth/auth.middleware";
 import { createAuthLimiters } from "@/auth/auth.rate-limit";
 import { authRouter } from "@/auth/auth.routes";
@@ -32,6 +33,7 @@ export function createApp(): Express {
   app.use("/api", requireAuth, vehiclesRouter);
   app.use("/api", requireAuth, maintenanceRouter);
   app.use("/api", requireAuth, reportRouter);
+  app.use("/api", requireAuth, attachmentsRouter);
 
   app.use(errorHandler);
 

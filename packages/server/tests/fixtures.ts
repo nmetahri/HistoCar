@@ -1,4 +1,6 @@
 import type { MaintenanceRecord, User, Vehicle } from "@prisma/client";
+import { PDFDocument } from "pdf-lib";
+import sharp from "sharp";
 
 export const TEST_PASSWORD = "test-password";
 export const TEST_USER_ID = "usr_1";
@@ -43,7 +45,28 @@ export function maintenanceRecordFixture(
     mileage: 100000,
     type: "Vidange",
     details: "Huile 5W30 + filtre",
+    costCents: null,
     createdAt: new Date("2026-03-15T00:00:00Z"),
     ...overrides,
   };
+}
+
+export function jpegFixture(width = 40, height = 20): Promise<Buffer> {
+  return sharp({ create: { width, height, channels: 3, background: "#cc0000" } })
+    .jpeg()
+    .toBuffer();
+}
+
+export function pngFixture(width = 40, height = 20): Promise<Buffer> {
+  return sharp({ create: { width, height, channels: 4, background: "#00000000" } })
+    .png()
+    .toBuffer();
+}
+
+export async function pdfFixture(pageCount = 1): Promise<Buffer> {
+  const document = await PDFDocument.create();
+  for (let page = 0; page < pageCount; page += 1) {
+    document.addPage();
+  }
+  return Buffer.from(await document.save({ useObjectStreams: false }));
 }

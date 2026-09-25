@@ -121,5 +121,5 @@ db-prod: ## [PROD] Ouvre un psql sur la base de production
 	$(DC_PROD) exec db sh -c 'psql -U $$POSTGRES_USER -d $$POSTGRES_DB'
 
 prune: ## [PROD] Stoppe les containers de prod ET supprime les volumes (DESTRUCTIF)
-	@echo "🔥 Suppression complète de la prod (containers + données Postgres)..."
+	@echo "🔥 Suppression complète de la prod (containers + données Postgres + justificatifs)..."
 	$(DC_PROD) down --volumes

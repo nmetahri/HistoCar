@@ -29,6 +29,7 @@ export interface ReportModel {
   generatedOn: string;
   fields: ReportField[];
   rows: string[][];
+  totalCost: string | null;
 }
 
 // Itéré par point de code : un emoji occupe deux unités UTF-16 et donnerait
@@ -46,13 +47,32 @@ export function formatDate(date: Date): string {
   return `${day}/${month}/${year}`;
 }
 
-export function formatMileage(mileage: number): string {
-  const digits = Math.trunc(mileage).toString();
-  const grouped = digits.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
-  return `${grouped} km`;
+function groupThousands(value: number): string {
+  return Math.trunc(value)
+    .toString()
+    .replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 }
 
-export const REPORT_COLUMN_HEADERS = ["Date", "Kilométrage", "Type", "Détails"];
+export function formatMileage(mileage: number): string {
+  return `${groupThousands(mileage)} km`;
+}
+
+const CENTS_PER_EURO = 100;
+
+// Formaté à la main : Intl sépare les milliers par une espace fine insécable
+// (U+202F) que Helvetica ne sait pas encoder.
+export function formatCost(costCents: number): string {
+  const euros = groupThousands(costCents / CENTS_PER_EURO);
+  const cents = String(costCents % CENTS_PER_EURO).padStart(2, "0");
+  return `${euros},${cents} €`;
+}
+
+function sumCosts(records: readonly MaintenanceRecord[]): number | null {
+  const costs = records.flatMap((record) => (record.costCents === null ? [] : [record.costCents]));
+  return costs.length === 0 ? null : costs.reduce((total, cost) => total + cost, 0);
+}
+
+export const REPORT_COLUMN_HEADERS = ["Date", "Kilométrage", "Type", "Détails", "Coût"];
 
 export function toReportModel(
   vehicle: Vehicle,
@@ -65,7 +85,9 @@ export function toReportModel(
       formatMileage(record.mileage),
       sanitizeWinAnsi(record.type),
       sanitizeWinAnsi(record.details),
+      record.costCents === null ? "" : formatCost(record.costCents),
     ]);
+  const totalCost = sumCosts(records);
 
   const make = sanitizeWinAnsi(vehicle.make);
   const model = sanitizeWinAnsi(vehicle.model);
@@ -84,5 +106,6 @@ export function toReportModel(
       { label: "Intervalle vidange préconisé", value: sanitizeWinAnsi(vehicle.oilChangeInterval) },
     ],
     rows,
+    totalCost: totalCost === null ? null : formatCost(totalCost),
   };
 }

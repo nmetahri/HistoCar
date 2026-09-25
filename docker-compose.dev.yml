@@ -42,10 +42,14 @@ services:
       - .:/app
       - server_root_modules:/app/node_modules
       - server_pkg_modules:/app/packages/server/node_modules
+      # Volume plutôt que bind mount : le conteneur tourne en root, les
+      # justificatifs écrits sur l'hôte ne seraient plus supprimables.
+      - server_uploads:/app/uploads
     env_file: .env
     environment:
       NODE_ENV: development
       WEB_ORIGIN: http://localhost:5173
+      UPLOADS_DIR: /app/uploads
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
     depends_on:
       db:
@@ -77,6 +81,7 @@ volumes:
   db_data_dev:
   server_root_modules:
   server_pkg_modules:
+  server_uploads:
   web_root_modules:
   web_pkg_modules:
 

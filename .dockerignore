@@ -15,3 +15,4 @@ cloudflared-tunnel
 docker-compose*.yml
 Makefile
 *.tsbuildinfo
+**/uploads

@@ -1,5 +1,6 @@
 import { TEST_PASSWORD, TEST_USER_ID, userFixture } from "@tests/fixtures";
 import type { Express } from "express";
+import { StatusCodes } from "http-status-codes";
 import request from "supertest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -53,7 +54,7 @@ describe("registrations without an invite code configured", () => {
       inviteCode: "peu-importe",
     });
 
-    expect(response.status).toBe(403);
+    expect(response.status).toBe(StatusCodes.FORBIDDEN);
     expect(response.body.message).toBe("Les inscriptions sont fermées");
     expect(prismaMock.user.create).not.toHaveBeenCalled();
   });
@@ -70,8 +71,8 @@ describe("rate limiting", () => {
       statuses.push((await attempt()).status);
     }
 
-    expect(statuses.filter((status) => status === 401)).toHaveLength(10);
-    expect(statuses.at(-1)).toBe(429);
+    expect(statuses.filter((status) => status === StatusCodes.UNAUTHORIZED)).toHaveLength(10);
+    expect(statuses.at(-1)).toBe(StatusCodes.TOO_MANY_REQUESTS);
   });
 
   it("lets every attempt through when disabled", async () => {
@@ -81,7 +82,7 @@ describe("rate limiting", () => {
       const response = await request(app)
         .post("/api/auth/login")
         .send({ username: "tester", password: TEST_PASSWORD });
-      expect(response.status).toBe(200);
+      expect(response.status).toBe(StatusCodes.OK);
     }
   });
 });

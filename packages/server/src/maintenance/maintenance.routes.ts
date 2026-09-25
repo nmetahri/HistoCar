@@ -1,6 +1,9 @@
 import { Router } from "express";
+import { StatusCodes } from "http-status-codes";
+import { removeAttachmentFiles } from "@/attachments/attachments.storage";
 import { getAuthUser } from "@/auth/auth.user";
-import { asyncRoute, HttpError } from "@/http/errors";
+import { asyncRoute } from "@/http/errors";
+import { assertRecordOwned } from "@/maintenance/maintenance.access";
 import {
   maintenanceRecordSchema,
   maintenanceRecordUpdateSchema,
@@ -9,24 +12,6 @@ import { prisma } from "@/prisma";
 import { assertVehicleOwned } from "@/vehicles/vehicles.access";
 
 export const maintenanceRouter = Router();
-
-// Contrôle le véhicule parent en même temps que le propriétaire : le
-// vehicleId de l'URL était auparavant ignoré, n'importe quel entretien
-// pouvait donc être modifié depuis n'importe quel véhicule.
-async function assertRecordOwned(
-  recordId: string,
-  vehicleId: string,
-  userId: string,
-): Promise<void> {
-  const record = await prisma.maintenanceRecord.findFirst({
-    where: { id: recordId, vehicleId, vehicle: { userId, active: true } },
-    select: { id: true },
-  });
-
-  if (!record) {
-    throw new HttpError(404, "Entretien introuvable");
-  }
-}
 
 maintenanceRouter.post(
   "/vehicles/:vehicleId/maintenance",
@@ -38,7 +23,7 @@ maintenanceRouter.post(
     const record = await prisma.maintenanceRecord.create({
       data: { ...data, date: new Date(data.date), vehicleId },
     });
-    res.status(201).json(record);
+    res.status(StatusCodes.CREATED).json(record);
   }),
 );
 
@@ -63,7 +48,12 @@ maintenanceRouter.delete(
     const id = req.params["id"] as string;
 
     await assertRecordOwned(id, req.params["vehicleId"] as string, getAuthUser(req).id);
+    const attachments = await prisma.attachment.findMany({
+      where: { maintenanceRecordId: id },
+      select: { storageKey: true },
+    });
     await prisma.maintenanceRecord.delete({ where: { id } });
-    res.status(204).send();
+    await removeAttachmentFiles(attachments.map((attachment) => attachment.storageKey));
+    res.status(StatusCodes.NO_CONTENT).send();
   }),
 );

@@ -59,8 +59,14 @@ services:
       target: runtime
     restart: unless-stopped
     env_file: .env
+    environment:
+      UPLOADS_DIR: /app/uploads
     expose:
       - "3001"
+    # Justificatifs (factures, photos) : à sauvegarder avec db_data, la base
+    # ne contient que leurs métadonnées.
+    volumes:
+      - uploads_data:/app/uploads
     depends_on:
       db:
         condition: service_healthy
@@ -111,6 +117,7 @@ services:
 
 volumes:
   db_data:
+  uploads_data:
 
 networks:
   histocar-network:

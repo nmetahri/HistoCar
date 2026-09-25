@@ -83,6 +83,18 @@ describe("maintenanceRecordSchema", () => {
     expect(maintenanceRecordSchema.safeParse({ ...VALID_RECORD, details: "" }).success).toBe(false);
   });
 
+  it("accepts an optional cost in integer cents", () => {
+    for (const costCents of [undefined, null, 0, 8990]) {
+      expect(maintenanceRecordSchema.safeParse({ ...VALID_RECORD, costCents }).success).toBe(true);
+    }
+  });
+
+  it("rejects a negative or fractional cost", () => {
+    for (const costCents of [-1, 89.9, "8990"]) {
+      expect(maintenanceRecordSchema.safeParse({ ...VALID_RECORD, costCents }).success).toBe(false);
+    }
+  });
+
   it("allows a partial update without a date", () => {
     expect(maintenanceRecordUpdateSchema.safeParse({ mileage: 5 }).success).toBe(true);
   });

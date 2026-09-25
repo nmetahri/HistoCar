@@ -1,5 +1,7 @@
 import { Prisma } from "@prisma/client";
 import type { NextFunction, Request, RequestHandler, Response } from "express";
+import { StatusCodes } from "http-status-codes";
+import { MulterError } from "multer";
 import { ZodError } from "zod";
 
 export class HttpError extends Error {
@@ -40,15 +42,25 @@ export function errorHandler(
   }
 
   if (error instanceof ZodError) {
-    res.status(400).json({ message: "Données invalides", details: error.flatten() });
+    res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ message: "Données invalides", details: error.flatten() });
+    return;
+  }
+
+  if (error instanceof MulterError) {
+    const isTooLarge = error.code === "LIMIT_FILE_SIZE";
+    res.status(isTooLarge ? StatusCodes.REQUEST_TOO_LONG : StatusCodes.BAD_REQUEST).json({
+      message: isTooLarge ? "Fichier trop volumineux" : "Envoi de fichiers invalide",
+    });
     return;
   }
 
   if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
-    res.status(404).json({ message: "Ressource introuvable" });
+    res.status(StatusCodes.NOT_FOUND).json({ message: "Ressource introuvable" });
     return;
   }
 
   console.error("Unhandled error:", error);
-  res.status(500).json({ message: "Erreur interne du serveur" });
+  res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: "Erreur interne du serveur" });
 }

@@ -602,3 +602,106 @@ td textarea {
     justify-content: flex-start;
   }
 }
+
+.report-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.cost-cell {
+  text-align: right;
+  white-space: nowrap;
+}
+
+tfoot th,
+tfoot td {
+  border-top: 2px solid var(--bordure);
+  padding-top: 0.75rem;
+  font-weight: 600;
+  color: var(--texte);
+}
+
+tfoot th {
+  text-align: right;
+  text-transform: none;
+  letter-spacing: normal;
+  font-size: 0.9rem;
+}
+
+.attachments-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+}
+
+.attachments-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--texte-discret);
+}
+
+.attachment-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.2rem;
+}
+
+.attachment-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.attachment-list a {
+  color: var(--accent);
+  overflow-wrap: anywhere;
+}
+
+td input[type="file"] {
+  border: none;
+  padding: 0;
+}
+
+@media (max-width: 600px) {
+  .report-actions {
+    flex-direction: column;
+    align-self: stretch;
+  }
+
+  tfoot {
+    display: block;
+  }
+
+  tfoot tr {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0.7rem;
+  }
+
+  tfoot th,
+  tfoot td {
+    border: none;
+    padding: 0;
+  }
+
+  tfoot td:empty,
+  tfoot td::before {
+    display: none;
+  }
+
+  td[data-label="Détails"] {
+    flex-wrap: wrap;
+  }
+
+  .attachments-editor {
+    flex-basis: 100%;
+  }
+
+  .cost-cell {
+    text-align: left;
+  }
+}

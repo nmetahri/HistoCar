@@ -2,15 +2,18 @@ import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   api,
+  type MaintenanceRecord,
   type MaintenanceRecordFormValues,
   type Vehicle,
   type VehicleFormValues,
   type VehicleWithMaintenance,
 } from "@/api/client";
+import { AttachmentsEditor } from "@/components/AttachmentsEditor";
 import {
   emptyMaintenanceRecordDraft,
   type MaintenanceRecordDraft,
   MaintenanceRecordForm,
+  toCostDraft,
   toMaintenanceRecordValues,
 } from "@/components/MaintenanceRecordForm";
 import { VehicleForm } from "@/components/VehicleForm";
@@ -18,6 +21,18 @@ import { VehicleInfo } from "@/components/VehicleInfo";
 
 const DELETE_VEHICLE_CONFIRMATION =
   "Supprimer ce véhicule ? Il pourra être restauré depuis la liste des véhicules.";
+
+const CENTS_PER_EURO = 100;
+const euroFormatter = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" });
+
+function formatCost(costCents: number | null): string {
+  return costCents === null ? "" : euroFormatter.format(costCents / CENTS_PER_EURO);
+}
+
+function sumCosts(records: readonly MaintenanceRecord[]): number | null {
+  const costs = records.flatMap((record) => (record.costCents === null ? [] : [record.costCents]));
+  return costs.length === 0 ? null : costs.reduce((total, cost) => total + cost, 0);
+}
 
 function toVehicleFormValues(vehicle: Vehicle): VehicleFormValues {
   return {
@@ -66,9 +81,18 @@ export function VehicleDetail() {
     navigate("/");
   }
 
-  async function addRecord(values: MaintenanceRecordFormValues): Promise<void> {
-    await api.createMaintenanceRecord(vehicleId, values);
+  async function addRecord(values: MaintenanceRecordFormValues): Promise<MaintenanceRecord> {
+    const record = await api.createMaintenanceRecord(vehicleId, values);
     await reload();
+    return record;
+  }
+
+  async function attachToRecord(recordId: string, files: readonly File[]): Promise<void> {
+    try {
+      await api.uploadAttachments(vehicleId, recordId, files);
+    } finally {
+      await reload();
+    }
   }
 
   async function deleteRecord(recordId: string): Promise<void> {
@@ -79,13 +103,14 @@ export function VehicleDetail() {
     await reload();
   }
 
-  function startEditing(record: VehicleWithMaintenance["maintenanceRecords"][number]): void {
+  function startEditing(record: MaintenanceRecord): void {
     setEditedRecordId(record.id);
     setEditedValues({
       date: record.date.slice(0, 10),
       mileage: String(record.mileage),
       type: record.type,
       details: record.details,
+      cost: toCostDraft(record.costCents),
     });
   }
 
@@ -102,6 +127,9 @@ export function VehicleDetail() {
   if (!vehicle) {
     return <p className="loading">Chargement...</p>;
   }
+
+  const totalCost = sumCosts(vehicle.maintenanceRecords);
+  const hasAttachments = vehicle.maintenanceRecords.some((record) => record.attachments.length > 0);
 
   return (
     <main className="page">
@@ -143,7 +171,7 @@ export function VehicleDetail() {
 
       <section className="card">
         <h2>Ajouter un entretien</h2>
-        <MaintenanceRecordForm onSubmit={addRecord} />
+        <MaintenanceRecordForm onCreate={addRecord} onAttach={attachToRecord} />
       </section>
 
       {vehicle.maintenanceRecords.length > 0 ? (
@@ -157,6 +185,7 @@ export function VehicleDetail() {
                   <th>Km</th>
                   <th>Type</th>
                   <th>Détails</th>
+                  <th>Coût</th>
                   <th></th>
                 </tr>
               </thead>
@@ -197,6 +226,23 @@ export function VehicleDetail() {
                             setEditedValues({ ...editedValues, details: event.target.value })
                           }
                         />
+                        <AttachmentsEditor
+                          vehicleId={vehicleId}
+                          record={record}
+                          onChange={reload}
+                        />
+                      </td>
+                      <td data-label="Coût">
+                        <input
+                          type="number"
+                          inputMode="decimal"
+                          min={0}
+                          step={0.01}
+                          value={editedValues.cost}
+                          onChange={(event) =>
+                            setEditedValues({ ...editedValues, cost: event.target.value })
+                          }
+                        />
                       </td>
                       <td className="row-actions" data-label="Actions">
                         <button
@@ -225,6 +271,9 @@ export function VehicleDetail() {
                       <td data-label="Km">{record.mileage.toLocaleString("fr-FR")}</td>
                       <td data-label="Type">{record.type}</td>
                       <td data-label="Détails">{record.details}</td>
+                      <td data-label="Coût" className="cost-cell">
+                        {formatCost(record.costCents)}
+                      </td>
                       <td className="row-actions" data-label="Actions">
                         <button
                           type="button"
@@ -249,6 +298,19 @@ export function VehicleDetail() {
                   ),
                 )}
               </tbody>
+              {totalCost === null ? null : (
+                <tfoot>
+                  <tr>
+                    <th colSpan={4} scope="row">
+                      Coût total
+                    </th>
+                    <td data-label="Coût total" className="cost-cell">
+                      {formatCost(totalCost)}
+                    </td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              )}
             </table>
           </div>
         </section>
@@ -259,9 +321,16 @@ export function VehicleDetail() {
         <p className="muted">
           Historique complet du véhicule au format A4, prêt à imprimer ou à transmettre.
         </p>
-        <a className="btn btn-secondary" href={api.reportPdfUrl(vehicleId)} download>
-          Télécharger le PDF
-        </a>
+        <div className="report-actions">
+          <a className="btn btn-secondary" href={api.reportPdfUrl(vehicleId)} download>
+            Télécharger le PDF
+          </a>
+          {hasAttachments ? (
+            <a className="btn btn-secondary" href={api.attachmentsPdfUrl(vehicleId)} download>
+              Télécharger les justificatifs
+            </a>
+          ) : null}
+        </div>
       </section>
     </main>
   );

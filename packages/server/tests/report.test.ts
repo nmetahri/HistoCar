@@ -2,7 +2,13 @@ import { maintenanceRecordFixture, vehicleFixture } from "@tests/fixtures";
 import { describe, expect, it } from "vitest";
 import { buildMaintenancePdf } from "@/report/pdf/builder";
 import { distributeColumnWidths } from "@/report/pdf/table";
-import { formatDate, formatMileage, sanitizeWinAnsi, toReportModel } from "@/report/report.data";
+import {
+  formatCost,
+  formatDate,
+  formatMileage,
+  sanitizeWinAnsi,
+  toReportModel,
+} from "@/report/report.data";
 import { buildReportFileName } from "@/report/report.routes";
 
 describe("formatDate", () => {
@@ -15,6 +21,14 @@ describe("formatMileage", () => {
   it("groups thousands and appends the unit", () => {
     expect(formatMileage(123456)).toBe("123 456 km");
     expect(formatMileage(0)).toBe("0 km");
+  });
+});
+
+describe("formatCost", () => {
+  it("renders cents as euros with French separators", () => {
+    expect(formatCost(123450)).toBe("1 234,50 €");
+    expect(formatCost(5)).toBe("0,05 €");
+    expect(formatCost(0)).toBe("0,00 €");
   });
 });
 
@@ -41,6 +55,21 @@ describe("toReportModel", () => {
     expect(records[0]?.id).toBe("old");
   });
 
+  it("fills the cost column and totals the known costs", () => {
+    const model = toReportModel(vehicleFixture(), [
+      maintenanceRecordFixture({ id: "a", costCents: 8990 }),
+      maintenanceRecordFixture({ id: "b", costCents: null }),
+      maintenanceRecordFixture({ id: "c", costCents: 120000 }),
+    ]);
+
+    expect(model.rows.map((row) => row[4])).toEqual(["89,90 €", "", "1 200,00 €"]);
+    expect(model.totalCost).toBe("1 289,90 €");
+  });
+
+  it("omits the total when no cost is known", () => {
+    expect(toReportModel(vehicleFixture(), [maintenanceRecordFixture()]).totalCost).toBeNull();
+  });
+
   it("describes the vehicle and handles an empty history", () => {
     const model = toReportModel(vehicleFixture(), []);
 
@@ -53,9 +82,9 @@ describe("toReportModel", () => {
 
 describe("distributeColumnWidths", () => {
   it("spreads the full width across the columns", () => {
-    const widths = distributeColumnWidths(500, [0.14, 0.16, 0.2, 0.5]);
+    const widths = distributeColumnWidths(500, [0.12, 0.14, 0.18, 0.44, 0.12]);
 
-    expect(widths).toHaveLength(4);
+    expect(widths).toHaveLength(5);
     expect(widths.reduce((sum, width) => sum + width, 0)).toBe(500);
   });
 });

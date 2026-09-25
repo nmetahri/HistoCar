@@ -1,23 +1,15 @@
 import { Router } from "express";
 import { getAuthUser } from "@/auth/auth.user";
 import { asyncRoute } from "@/http/errors";
+import { buildVehicleFileName } from "@/http/file-name";
 import { buildMaintenancePdf } from "@/report/pdf/builder";
 import { toReportModel } from "@/report/report.data";
 import { findOwnedVehicle } from "@/vehicles/vehicles.access";
 
 export const reportRouter = Router();
 
-// L'immatriculation est saisie par l'utilisateur : la réduire à de l'ASCII
-// évite guillemets et retours chariot dans l'en-tête Content-Disposition.
 export function buildReportFileName(licensePlate: string): string {
-  const slug = licensePlate
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/[^a-zA-Z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .toLowerCase();
-
-  return `historique-entretien-${slug || "vehicule"}.pdf`;
+  return buildVehicleFileName("historique-entretien", licensePlate);
 }
 
 reportRouter.get(

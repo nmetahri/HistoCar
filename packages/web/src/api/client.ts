@@ -1,3 +1,5 @@
+import { StatusCodes } from "http-status-codes";
+
 const API_URL = import.meta.env["VITE_API_URL"] as string;
 
 export interface Vehicle {
@@ -12,6 +14,14 @@ export interface Vehicle {
   oilChangeInterval: string;
 }
 
+export interface Attachment {
+  id: string;
+  originalName: string;
+  mimeType: string;
+  sizeBytes: number;
+  createdAt: string;
+}
+
 export interface MaintenanceRecord {
   id: string;
   vehicleId: string;
@@ -19,12 +29,17 @@ export interface MaintenanceRecord {
   mileage: number;
   type: string;
   details: string;
+  costCents: number | null;
+  attachments: Attachment[];
 }
 
 export type VehicleWithMaintenance = Vehicle & { maintenanceRecords: MaintenanceRecord[] };
 
 export type VehicleFormValues = Omit<Vehicle, "id">;
-export type MaintenanceRecordFormValues = Omit<MaintenanceRecord, "id" | "vehicleId">;
+export type MaintenanceRecordFormValues = Omit<
+  MaintenanceRecord,
+  "id" | "vehicleId" | "attachments"
+>;
 
 export class ApiError extends Error {
   constructor(
@@ -35,8 +50,6 @@ export class ApiError extends Error {
   }
 }
 
-const UNAUTHORIZED = 401;
-
 let onUnauthorized: (() => void) | null = null;
 
 // Permet à AuthProvider de vider la session locale quand le cookie expire en
@@ -45,25 +58,39 @@ export function setUnauthorizedHandler(handler: (() => void) | null): void {
   onUnauthorized = handler;
 }
 
+// Un FormData doit partir sans Content-Type explicite : le navigateur y
+// ajoute la boundary multipart.
+function headersFor(options: RequestInit): HeadersInit | undefined {
+  return options.body instanceof FormData
+    ? options.headers
+    : { "Content-Type": "application/json", ...options.headers };
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const response = await fetch(`${API_URL}${path}`, {
     ...options,
     credentials: "include",
-    headers: { "Content-Type": "application/json", ...options.headers },
+    headers: headersFor(options),
   });
 
   if (!response.ok) {
     const body = (await response.json().catch(() => ({}))) as { message?: string };
-    if (response.status === UNAUTHORIZED && !path.startsWith("/auth/")) {
+    if (response.status === StatusCodes.UNAUTHORIZED && !path.startsWith("/auth/")) {
       onUnauthorized?.();
     }
     throw new ApiError(body.message ?? `Erreur ${response.status}`, response.status);
   }
 
-  if (response.status === 204) {
+  if (response.status === StatusCodes.NO_CONTENT) {
     return undefined as T;
   }
   return (await response.json()) as T;
+}
+
+const ATTACHMENT_FIELD_NAME = "files";
+
+function attachmentsPath(vehicleId: string, recordId: string): string {
+  return `/vehicles/${vehicleId}/maintenance/${recordId}/attachments`;
 }
 
 export const api = {
@@ -107,5 +134,18 @@ export const api = {
   deleteMaintenanceRecord: (vehicleId: string, id: string) =>
     request<void>(`/vehicles/${vehicleId}/maintenance/${id}`, { method: "DELETE" }),
 
+  uploadAttachments: (vehicleId: string, recordId: string, files: readonly File[]) => {
+    const body = new FormData();
+    for (const file of files) {
+      body.append(ATTACHMENT_FIELD_NAME, file);
+    }
+    return request<Attachment[]>(attachmentsPath(vehicleId, recordId), { method: "POST", body });
+  },
+  deleteAttachment: (vehicleId: string, recordId: string, id: string) =>
+    request<void>(`${attachmentsPath(vehicleId, recordId)}/${id}`, { method: "DELETE" }),
+  attachmentUrl: (vehicleId: string, recordId: string, id: string) =>
+    `${API_URL}${attachmentsPath(vehicleId, recordId)}/${id}`,
+
   reportPdfUrl: (vehicleId: string) => `${API_URL}/vehicles/${vehicleId}/report.pdf`,
+  attachmentsPdfUrl: (vehicleId: string) => `${API_URL}/vehicles/${vehicleId}/attachments.pdf`,
 };

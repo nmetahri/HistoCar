@@ -1,4 +1,5 @@
 import { createHash, timingSafeEqual } from "node:crypto";
+import { StatusCodes } from "http-status-codes";
 import { env } from "@/env";
 import { HttpError } from "@/http/errors";
 
@@ -13,10 +14,10 @@ export function assertInviteCode(submitted: string): void {
   const expected = env.signupInviteCode;
 
   if (!expected) {
-    throw new HttpError(403, "Les inscriptions sont fermées");
+    throw new HttpError(StatusCodes.FORBIDDEN, "Les inscriptions sont fermées");
   }
 
   if (!timingSafeEqual(digest(submitted), digest(expected))) {
-    throw new HttpError(403, "Code d'invitation invalide");
+    throw new HttpError(StatusCodes.FORBIDDEN, "Code d'invitation invalide");
   }
 }
