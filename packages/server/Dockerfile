@@ -9,7 +9,10 @@ FROM base AS deps
 COPY package.json package-lock.json ./
 COPY packages/server/package.json packages/server/
 COPY packages/web/package.json packages/web/
-RUN npm ci
+# Seul ce workspace est installé, et le cache npm survit aux builds : moins
+# de téléchargements, donc moins d'exposition aux coupures réseau.
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci -w packages/server --fetch-retries=5 --fetch-retry-maxtimeout=120000
 
 FROM deps AS builder
 COPY packages/server packages/server
@@ -17,7 +20,7 @@ RUN npm run prisma:generate -w packages/server \
  && npm run build -w packages/server
 
 FROM deps AS prod-deps
-RUN npm prune --omit=dev
+RUN npm prune --omit=dev -w packages/server
 
 FROM base AS runtime
 ENV NODE_ENV=production
