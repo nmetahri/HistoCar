@@ -14,6 +14,9 @@ const FOOTER_NOTE = "Document fourni à titre informatif pour l'historique d'ent
 const PANEL_PADDING = 8;
 const FIELD_LINE_HEIGHT = 14;
 const FIELDS_PER_ROW = 2;
+const NOTES_LABEL = "Notes additionnelles";
+const NOTES_LABEL_GAP = 2;
+const NOTES_BOTTOM_GAP = 12;
 
 function contentWidth(doc: PDFKit.PDFDocument): number {
   return doc.page.width - doc.page.margins.left - doc.page.margins.right;
@@ -56,6 +59,22 @@ function drawFields(doc: PDFKit.PDFDocument, fields: readonly ReportField[]): vo
   });
 
   doc.y = panelTop + panelHeight + 12;
+}
+
+function drawNotes(doc: PDFKit.PDFDocument, notes: string | null): void {
+  if (notes === null) {
+    return;
+  }
+
+  const left = doc.page.margins.left;
+  doc.font(FONT_BOLD).fontSize(FONT_SIZES.field).fillColor(COLORS.muted);
+  doc.text(NOTES_LABEL, left, doc.y, { width: contentWidth(doc) });
+
+  doc.y += NOTES_LABEL_GAP;
+  doc.font(FONT_REGULAR).fillColor(COLORS.text);
+  doc.text(notes, left, doc.y, { width: contentWidth(doc) });
+
+  doc.y += NOTES_BOTTOM_GAP;
 }
 
 function drawTotalCost(doc: PDFKit.PDFDocument, totalCost: string | null): void {
@@ -103,6 +122,7 @@ export function buildMaintenancePdf(model: ReportModel): Promise<Buffer> {
 
   drawTitle(doc, model);
   drawFields(doc, model.fields);
+  drawNotes(doc, model.notes);
   drawTable(doc, {
     headers: REPORT_COLUMN_HEADERS,
     columnWidths: distributeColumnWidths(contentWidth(doc), COLUMN_RATIOS),

@@ -47,6 +47,7 @@ function toVehicleFormValues(vehicle: Vehicle): VehicleFormValues {
     engine: vehicle.engine,
     oilCapacity: vehicle.oilCapacity,
     oilChangeInterval: vehicle.oilChangeInterval,
+    notes: vehicle.notes,
   };
 }
 

@@ -1,4 +1,5 @@
 import type { Vehicle } from "@/api/client";
+import { LinkifiedText } from "@/components/LinkifiedText";
 import { formatIsoDate, formatMileage } from "@/format";
 
 interface VehicleInfoProps {
@@ -22,6 +23,7 @@ export function VehicleInfo({ vehicle, estimatedMileage }: VehicleInfoProps) {
     { label: "Capacité huile", value: vehicle.oilCapacity },
     { label: "Intervalle vidange", value: vehicle.oilChangeInterval },
   ];
+  const notes = vehicle.notes.trim();
 
   return (
     <section className="card">
@@ -33,6 +35,14 @@ export function VehicleInfo({ vehicle, estimatedMileage }: VehicleInfoProps) {
           </div>
         ))}
       </dl>
+      {notes === "" ? null : (
+        <div className="vehicle-notes">
+          <h3>Notes additionnelles</h3>
+          <p>
+            <LinkifiedText text={notes} />
+          </p>
+        </div>
+      )}
     </section>
   );
 }

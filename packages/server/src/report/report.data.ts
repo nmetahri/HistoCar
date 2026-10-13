@@ -28,6 +28,7 @@ export interface ReportModel {
   title: string;
   generatedOn: string;
   fields: ReportField[];
+  notes: string | null;
   rows: string[][];
   totalCost: string | null;
 }
@@ -65,6 +66,11 @@ export function formatCost(costCents: number): string {
   const euros = groupThousands(costCents / CENTS_PER_EURO);
   const cents = String(costCents % CENTS_PER_EURO).padStart(2, "0");
   return `${euros},${cents} €`;
+}
+
+function toReportNotes(notes: string): string | null {
+  const trimmed = notes.trim();
+  return trimmed === "" ? null : sanitizeWinAnsi(trimmed);
 }
 
 function sumCosts(records: readonly MaintenanceRecord[]): number | null {
@@ -110,6 +116,7 @@ export function toReportModel(
       { label: "Capacité huile", value: sanitizeWinAnsi(vehicle.oilCapacity) },
       { label: "Intervalle vidange préconisé", value: sanitizeWinAnsi(vehicle.oilChangeInterval) },
     ],
+    notes: toReportNotes(vehicle.notes),
     rows,
     totalCost: totalCost === null ? null : formatCost(totalCost),
   };

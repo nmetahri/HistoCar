@@ -352,6 +352,25 @@ td textarea:focus {
   font-weight: 500;
 }
 
+.vehicle-notes {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--bordure);
+}
+
+.vehicle-notes h3 {
+  margin: 0;
+  color: var(--texte-discret);
+  font-size: 0.82rem;
+  font-weight: 400;
+}
+
+.vehicle-notes p {
+  margin: 0.15rem 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .report-card {
   display: flex;
   flex-direction: column;

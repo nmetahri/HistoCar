@@ -14,6 +14,7 @@ const EMPTY_VEHICLE_DRAFT: VehicleDraft = {
   engine: "",
   oilCapacity: "",
   oilChangeInterval: "",
+  notes: "",
 };
 
 function toVehicleDraft(values: VehicleFormValues): VehicleDraft {
@@ -29,13 +30,16 @@ function toVehicleValues(draft: VehicleDraft): VehicleFormValues {
   return { ...draft, year: Number(draft.year), initialMileage: Number(draft.initialMileage) };
 }
 
-type VehicleFieldType = "text" | "number" | "date";
+type VehicleFieldType = "text" | "number" | "date" | "textarea";
+
+const NOTES_ROWS = 4;
 
 interface VehicleField {
   name: keyof VehicleFormValues;
   label: string;
   type: VehicleFieldType;
   hint?: string;
+  optional?: boolean;
 }
 
 const VEHICLE_FIELDS: readonly VehicleField[] = [
@@ -53,6 +57,13 @@ const VEHICLE_FIELDS: readonly VehicleField[] = [
   { name: "engine", label: "Motorisation", type: "text" },
   { name: "oilCapacity", label: "Capacité huile", type: "text" },
   { name: "oilChangeInterval", label: "Intervalle vidange", type: "text" },
+  {
+    name: "notes",
+    label: "Notes additionnelles",
+    type: "textarea",
+    hint: "Facultatif : liens utiles, références de pièces…",
+    optional: true,
+  },
 ];
 
 interface VehicleFormProps {
@@ -77,15 +88,25 @@ export function VehicleForm({ initialValues, submitLabel, onSubmit, onCancel }: 
       {VEHICLE_FIELDS.map((field) => (
         <div className="field" key={field.name}>
           <label htmlFor={field.name}>{field.label}</label>
-          <input
-            id={field.name}
-            type={field.type}
-            inputMode={field.type === "number" ? "numeric" : undefined}
-            min={field.type === "number" ? 0 : undefined}
-            value={draft[field.name]}
-            onChange={(event) => setDraft({ ...draft, [field.name]: event.target.value })}
-            required
-          />
+          {field.type === "textarea" ? (
+            <textarea
+              id={field.name}
+              rows={NOTES_ROWS}
+              value={draft[field.name]}
+              onChange={(event) => setDraft({ ...draft, [field.name]: event.target.value })}
+              required={!field.optional}
+            />
+          ) : (
+            <input
+              id={field.name}
+              type={field.type}
+              inputMode={field.type === "number" ? "numeric" : undefined}
+              min={field.type === "number" ? 0 : undefined}
+              value={draft[field.name]}
+              onChange={(event) => setDraft({ ...draft, [field.name]: event.target.value })}
+              required={!field.optional}
+            />
+          )}
           {field.hint ? <span className="hint">{field.hint}</span> : null}
         </div>
       ))}

@@ -1,0 +1,1 @@
+ALTER TABLE "Vehicle" ADD COLUMN "notes" TEXT NOT NULL DEFAULT '';

@@ -13,6 +13,7 @@ export interface Vehicle {
   engine: string;
   oilCapacity: string;
   oilChangeInterval: string;
+  notes: string;
 }
 
 export interface Attachment {

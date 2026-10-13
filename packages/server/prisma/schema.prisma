@@ -28,6 +28,7 @@ model Vehicle {
   engine             String
   oilCapacity        String
   oilChangeInterval  String
+  notes              String              @default("")
   active             Boolean             @default(true)
   maintenanceRecords MaintenanceRecord[]
   createdAt          DateTime            @default(now())

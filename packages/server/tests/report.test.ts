@@ -90,6 +90,19 @@ describe("toReportModel", () => {
     });
     expect(model.fields).toContainEqual({ label: "Kilométrage actuel", value: "123 456 km" });
   });
+
+  it("omits blank notes", () => {
+    expect(toReportModel(vehicleFixture(), [], CURRENT_MILEAGE).notes).toBeNull();
+    expect(toReportModel(vehicleFixture({ notes: "  \n " }), [], CURRENT_MILEAGE).notes).toBeNull();
+  });
+
+  it("trims and sanitizes filled notes", () => {
+    const vehicle = vehicleFixture({ notes: " Moteur EP6 → https://www.realoem.com\n " });
+
+    expect(toReportModel(vehicle, [], CURRENT_MILEAGE).notes).toBe(
+      "Moteur EP6 ? https://www.realoem.com",
+    );
+  });
 });
 
 describe("distributeColumnWidths", () => {
@@ -117,6 +130,15 @@ describe("buildMaintenancePdf", () => {
 
     expect(pdf.subarray(0, 4).toString()).toBe("%PDF");
     expect(pdf.byteLength).toBeGreaterThan(500);
+  });
+
+  it("renders long multiline notes", async () => {
+    const notes = Array.from({ length: 20 }, (_, index) => `Lien ${index} : https://example.com`);
+    const vehicle = vehicleFixture({ notes: notes.join("\n") });
+
+    const pdf = await buildMaintenancePdf(toReportModel(vehicle, [], CURRENT_MILEAGE));
+
+    expect(pdf.subarray(0, 4).toString()).toBe("%PDF");
   });
 
   it("paginates a long history", async () => {

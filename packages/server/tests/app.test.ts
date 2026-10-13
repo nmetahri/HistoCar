@@ -359,6 +359,22 @@ describe("vehicles", () => {
     });
   });
 
+  it("updates the notes of a vehicle", async () => {
+    prismaMock.vehicle.findFirst.mockResolvedValue({ id: "veh_1" });
+    prismaMock.vehicle.update.mockResolvedValue(vehicleFixture());
+
+    const response = await request(app)
+      .put("/api/vehicles/veh_1")
+      .set("Cookie", await sessionCookie())
+      .send({ notes: " https://www.realoem.com " });
+
+    expect(response.status).toBe(StatusCodes.OK);
+    expect(prismaMock.vehicle.update).toHaveBeenCalledWith({
+      where: { id: "veh_1" },
+      data: { notes: "https://www.realoem.com" },
+    });
+  });
+
   it("only lists the archived vehicles of the signed-in user", async () => {
     prismaMock.vehicle.findMany.mockResolvedValue([vehicleFixture({ active: false })]);
 

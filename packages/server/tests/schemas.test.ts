@@ -3,7 +3,11 @@ import {
   maintenanceRecordSchema,
   maintenanceRecordUpdateSchema,
 } from "@/maintenance/maintenance.schema";
-import { vehicleSchema, vehicleUpdateSchema } from "@/vehicles/vehicles.schema";
+import {
+  VEHICLE_NOTES_MAX_LENGTH,
+  vehicleSchema,
+  vehicleUpdateSchema,
+} from "@/vehicles/vehicles.schema";
 
 const VALID_VEHICLE = {
   make: "Peugeot",
@@ -49,6 +53,18 @@ describe("vehicleSchema", () => {
     );
   });
 
+  it("treats notes as optional and trims them", () => {
+    expect(vehicleSchema.parse(VALID_VEHICLE)).not.toHaveProperty("notes");
+    expect(
+      vehicleSchema.parse({ ...VALID_VEHICLE, notes: "  https://www.realoem.com  " }).notes,
+    ).toBe("https://www.realoem.com");
+  });
+
+  it("rejects notes over the maximum length", () => {
+    const notes = "x".repeat(VEHICLE_NOTES_MAX_LENGTH + 1);
+    expect(vehicleSchema.safeParse({ ...VALID_VEHICLE, notes }).success).toBe(false);
+  });
+
   it("strips unknown fields", () => {
     const parsed = vehicleSchema.parse({ ...VALID_VEHICLE, id: "injected", unknown: true });
     expect(parsed).not.toHaveProperty("id");
@@ -60,6 +76,10 @@ describe("vehicleUpdateSchema", () => {
   it("accepts a partial update", () => {
     expect(vehicleUpdateSchema.safeParse({ initialMileage: 130000 }).success).toBe(true);
     expect(vehicleUpdateSchema.safeParse({}).success).toBe(true);
+  });
+
+  it("leaves the notes untouched when they are not sent", () => {
+    expect(vehicleUpdateSchema.parse({ initialMileage: 130000 })).not.toHaveProperty("notes");
   });
 
   it("still validates the fields that are present", () => {
