@@ -22,7 +22,7 @@ jobs:
         run: cp /home/runner-histocar/secrets/.env .env
 
       - name: 3. Copy cloudflared tunnel credentials
-        run: mkdir -p cloudflared && cp /home/runner-histocar/secrets/cloudflared/*.json cloudflared/
+        run: mkdir -p cloudflared && install -m 644 /home/runner-histocar/secrets/cloudflared/*.json cloudflared/
 
       - name: 4. Rebuild and Deploy Docker Services
         run: make update-prod
