@@ -30,8 +30,10 @@ tunnel-check: ## [SETUP] Vérifie la config du tunnel cloudflare avant un up-pro
 	@grep -q '^TUNNEL_UUID=.\+' .env || { echo "❌ TUNNEL_UUID vide dans .env"; exit 1; }
 	@uuid=$$(grep '^TUNNEL_UUID=' .env | cut -d= -f2); \
 	  [ -f "cloudflared/$$uuid.json" ] || { echo "❌ cloudflared/$$uuid.json introuvable"; exit 1; }
-	@grep -q 'example.com' cloudflared/config.yaml && \
-	  { echo "❌ Hostname placeholder encore présent dans cloudflared/config.yaml"; exit 1; } || true
+	@[ -f cloudflared/config.yaml ] || \
+	  { echo "❌ cloudflared/config.yaml introuvable (cp cloudflared/config.example.yaml cloudflared/config.yaml)"; exit 1; }
+	@! grep -q 'example.com' cloudflared/config.yaml || \
+	  { echo "❌ Hostname placeholder encore présent dans cloudflared/config.yaml"; exit 1; }
 	@echo "✅ Tunnel configuré."
 
 # ─── Qualité ──────────────────────────────────────────────────────────────────
@@ -106,7 +108,7 @@ down-prod: ## [PROD] Stoppe la stack de production
 	@echo "🛑 Arrêt de la production..."
 	$(DC_PROD) down
 
-update-prod: ## [PROD] Met à jour la prod sans coupure de service
+update-prod: tunnel-check ## [PROD] Met à jour la prod sans coupure de service
 	@echo "🔄 Mise à jour transparente de la PRODUCTION..."
 	$(DC_PROD) up -d --build --remove-orphans
 	@echo "✅ HistoCar mis à jour !"

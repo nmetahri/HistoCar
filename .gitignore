@@ -8,3 +8,4 @@ build/
 uploads/
 
 cloudflared/*.json
+cloudflared/config.yaml

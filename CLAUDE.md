@@ -42,7 +42,7 @@ npm run prisma:migrate -w packages/server                # prisma migrate dev
 npm run prisma:generate -w packages/server               # required before first typecheck/test run
 ```
 
-Pushing to `main` deploys: `.github/workflows/deploy.yml` runs on a self-hosted runner, copies `.env` and the tunnel credentials from the runner's secrets directory, then `make update-prod`.
+Pushing to `main` deploys: `.github/workflows/deploy.yml` runs on a self-hosted runner, copies `.env`, `cloudflared/config.yaml` and the tunnel credentials from the runner's secrets directory (`/home/runner-histocar/secrets/`; none of them is in git), then `make update-prod`.
 
 ## Imports — aliases only, no relative paths
 
@@ -88,7 +88,7 @@ Five services:
 
 **Back up `db_data` and `uploads_data` together.** The database only holds invoice metadata; restoring one without the other leaves broken or orphaned files.
 
-**The `${TUNNEL_UUID}` in `cloudflared/config.yaml` is never expanded** — cloudflared reads the file literally. It works because `docker-compose.yml` overrides the command with `--cred-file /etc/cloudflared/${TUNNEL_UUID}.json` and `tunnel run ${TUNNEL_UUID}`, where Compose *does* interpolate. The ingress hostnames, on the other hand, must be written out literally. `make tunnel-check` (a prerequisite of `up-prod`) fails if `TUNNEL_UUID` is empty, the credentials file is missing, or the `example.com` placeholder is still in the config.
+**The `${TUNNEL_UUID}` in `cloudflared/config.yaml` is never expanded** — cloudflared reads the file literally. It works because `docker-compose.yml` overrides the command with `--cred-file /etc/cloudflared/${TUNNEL_UUID}.json` and `tunnel run ${TUNNEL_UUID}`, where Compose *does* interpolate. The ingress hostnames, on the other hand, must be written out literally. `cloudflared/config.yaml` is gitignored so the real hostname stays out of the repo; `config.example.yaml` is the committed template. `make tunnel-check` (a prerequisite of `up-prod` and `update-prod`) fails if `TUNNEL_UUID` is empty, the credentials file or `config.yaml` is missing, or the `example.com` placeholder is still in it — so a deploy without the config stops before touching the running containers.
 
 Setting up the tunnel once:
 
@@ -98,7 +98,8 @@ cloudflared tunnel login
 cloudflared tunnel create histocar-tunnel          # prints the UUID and writes ~/.cloudflared/<UUID>.json
 cp ~/.cloudflared/<UUID>.json cloudflared/
 cloudflared tunnel route dns histocar-tunnel histocar.<domain>
-# then: TUNNEL_UUID=<UUID> in .env, and the hostname in cloudflared/config.yaml
+cp cloudflared/config.example.yaml cloudflared/config.yaml   # then set the real hostname in it
+# and TUNNEL_UUID=<UUID> in .env
 ```
 
 **Everything is same-origin in Docker.** The web image is built with `VITE_API_URL=/api` (a build arg — the value is baked into the bundle, so changing it requires a rebuild, not a restart), and nginx proxies `/api/` to the server. No CORS preflight, and the auth cookie is first-party. `nginx.conf` also handles the SPA fallback (`try_files … /index.html`), keeps `sw.js`, `index.html` and the manifest uncacheable so PWA updates land, and raises `client_max_body_size` on `/api/` to fit an upload — keep it above the multer limits in `attachments.upload.ts`, or nginx answers 413 before the server sees the request.
