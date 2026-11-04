@@ -1,12 +1,6 @@
-<p align="center">
-  <img src="packages/web/public/icon-512.png" alt="HistoCar logo" width="96" height="96">
-</p>
+![HistoCar — the full maintenance history of your vehicles, invoices included](docs/banner.png)
 
-<h1 align="center">HistoCar</h1>
-
-<p align="center">
-  Self-hosted PWA to keep the maintenance history of your vehicles, with their invoices.
-</p>
+# HistoCar
 
 Log each service with its date, mileage and cost, attach the invoices (PDF, JPEG, PNG), and download per vehicle an A4 maintenance sheet plus one PDF merging all its invoices. Handy when selling a car.
 
