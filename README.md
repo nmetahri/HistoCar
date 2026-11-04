@@ -1,8 +1,34 @@
-# HistoCar
+<p align="center">
+  <img src="packages/web/public/icon-512.png" alt="HistoCar logo" width="96" height="96">
+</p>
 
-Self-hosted PWA to keep the maintenance history of your vehicles: log each service with its date, mileage and cost, attach the invoices (PDF, JPEG, PNG), and download per vehicle an A4 maintenance sheet plus one PDF merging all its invoices. Handy when selling a car.
+<h1 align="center">HistoCar</h1>
+
+<p align="center">
+  Self-hosted PWA to keep the maintenance history of your vehicles, with their invoices.
+</p>
+
+Log each service with its date, mileage and cost, attach the invoices (PDF, JPEG, PNG), and download per vehicle an A4 maintenance sheet plus one PDF merging all its invoices. Handy when selling a car.
 
 Multi-user, invite-only sign-up. The UI and the generated PDFs are in French.
+
+## Screenshots
+
+![Vehicle page: details, new maintenance form, history and downloads](docs/screenshots/vehicle-detail.png)
+
+| Maintenance sheet (generated PDF) | Invoices attached to a record |
+|---|---|
+| ![A4 maintenance sheet generated as PDF](docs/screenshots/maintenance-sheet.png) | ![History row in edit mode with its invoices](docs/screenshots/history-edit.png) |
+
+**All invoices merged into one PDF**: PDF pages are copied as-is, each image gets its own A4 page.
+
+![The vehicle's invoices merged into a single PDF](docs/screenshots/merged-invoices.png)
+
+<p align="center">
+  <img src="docs/screenshots/mobile.png" alt="Vehicle page on mobile" width="300">
+</p>
+
+<sub>Demo data: the vehicle, plate and garage are fictional.</sub>
 
 **Stack**: npm workspaces monorepo — `packages/server` (Express, Prisma, PostgreSQL, pdfkit, pdf-lib, sharp) and `packages/web` (React, Vite, vite-plugin-pwa). Docker Compose for dev and prod, optional Cloudflare Tunnel for public exposure.
 
