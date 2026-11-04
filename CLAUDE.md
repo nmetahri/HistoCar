@@ -42,7 +42,7 @@ npm run prisma:migrate -w packages/server                # prisma migrate dev
 npm run prisma:generate -w packages/server               # required before first typecheck/test run
 ```
 
-Pushing to `main` deploys: `.github/workflows/deploy.yml` runs on a self-hosted runner, copies `.env`, `cloudflared/config.yaml` and the tunnel credentials from the runner's secrets directory (`/home/runner-histocar/secrets/`; none of them is in git), then `make update-prod`.
+Pushing to `main` deploys: `.github/workflows/deploy.yml` runs on a self-hosted runner, copies `.env`, `cloudflared/config.yaml` and the tunnel credentials from the runner's secrets directory (`$HOME/secrets/` of the runner user; none of them is in git), then `make update-prod`.
 
 ## Imports — aliases only, no relative paths
 
